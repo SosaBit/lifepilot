@@ -6,8 +6,16 @@
     <meta name="theme-color" content="#6c5ce7" />
     <meta name="description" content="LifePilot trasforma i tuoi obiettivi in piani d'azione quotidiani." />
     <title>LifePilot — Trasforma i tuoi obiettivi in azioni</title>
+    <style>
+      html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f7f7fb;color:#171725}
+      #lifepilot-boot{min-height:100vh;display:grid;place-items:center;padding:24px;box-sizing:border-box}
+      #lifepilot-boot-card{width:min(420px,100%);padding:32px;border-radius:24px;background:#fff;box-shadow:0 12px 40px rgba(0,0,0,.08);text-align:center}
+      #lifepilot-boot-card strong{display:block;font-size:24px;margin-bottom:8px}
+      #lifepilot-boot-card span{color:#666;line-height:1.5}
+    </style>
   </head>
   <body>
+    <div id="lifepilot-boot"><div id="lifepilot-boot-card"><strong>LifePilot</strong><span>Caricamento dell'app…</span></div></div>
     <div id="root"></div>
     <script>
       try {
@@ -16,8 +24,18 @@
           localStorage.setItem('lifepilot-auth-migration-v1', '1');
         }
       } catch (_) {}
+      window.addEventListener('error', function(e){
+        var b=document.getElementById('lifepilot-boot');
+        if(b){b.style.display='grid';b.innerHTML='<div id="lifepilot-boot-card"><strong>LifePilot</strong><span>Si è verificato un errore durante il caricamento. Ricarica la pagina.</span></div>';}
+      });
+      window.addEventListener('unhandledrejection', function(){
+        var b=document.getElementById('lifepilot-boot');
+        if(b){b.style.display='grid';}
+      });
     </script>
-    <script type="module" src="/src/main.jsx?v=20260819-1815"></script>
-    <script type="module" src="/src/password-recovery-enhancer.js?v=20260819-1815"></script>
+    <script type="module" src="/src/main.jsx?v=20260819-1827"></script>
+    <script>
+      window.addEventListener('load',function(){var b=document.getElementById('lifepilot-boot');if(b)b.remove();});
+    </script>
   </body>
 </html>
