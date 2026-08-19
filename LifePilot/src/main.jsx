@@ -168,7 +168,7 @@ function AuthScreen() {
         await supabase.auth.signInWithOAuth({
           provider: "google",
           options: {
-            redirectTo: window.location.origin,
+            redirectTo: "https://lifepilot-26vdyare5-brandecho2k25-8479s-projects.vercel.app"
           },
         });
 
