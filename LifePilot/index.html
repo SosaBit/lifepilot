@@ -4,44 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#6c5ce7" />
-    <meta name="description" content="LifePilot trasforma i tuoi obiettivi in piani d'azione quotidiani." />
-    <title>LifePilot — Trasforma i tuoi obiettivi in azioni</title>
-    <style>
-      html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f7f7fb;color:#171725}
-      #lifepilot-boot{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;padding:24px;box-sizing:border-box;background:#f7f7fb}
-      #lifepilot-boot-card{width:min(420px,100%);padding:32px;border-radius:24px;background:#fff;box-shadow:0 12px 40px rgba(0,0,0,.08);text-align:center}
-      #lifepilot-boot-card strong{display:block;font-size:24px;margin-bottom:8px}
-      #lifepilot-boot-card span{color:#666;line-height:1.5}
-    </style>
+    <meta name="description" content="LifePilot — obiettivi, costanza e progressi." />
+    <title>LifePilot</title>
+    <style>html,body,#root{margin:0;min-height:100%;}body{background:#f7f5ff}</style>
   </head>
   <body>
-    <div id="lifepilot-boot"><div id="lifepilot-boot-card"><strong>LifePilot</strong><span>Caricamento dell'app…</span></div></div>
     <div id="root"></div>
-    <script>
-      (function(){
-        try{
-          if(!localStorage.getItem('lifepilot-auth-migration-v1')){
-            Object.keys(localStorage).filter(function(k){return k.indexOf('sb-')===0;}).forEach(function(k){localStorage.removeItem(k);});
-            localStorage.setItem('lifepilot-auth-migration-v1','1');
-          }
-        }catch(_){ }
-        function showError(){
-          var b=document.getElementById('lifepilot-boot');
-          if(b)b.innerHTML='<div id="lifepilot-boot-card"><strong>LifePilot</strong><span>Si è verificato un errore durante il caricamento. Ricarica la pagina.</span></div>';
-        }
-        window.addEventListener('error',showError);
-        window.addEventListener('unhandledrejection',showError);
-        var observer=new MutationObserver(function(){
-          var root=document.getElementById('root'),boot=document.getElementById('lifepilot-boot');
-          if(root&&root.childElementCount>0&&boot)boot.remove();
-        });
-        observer.observe(document.documentElement,{childList:true,subtree:true});
-        setTimeout(function(){
-          var root=document.getElementById('root'),boot=document.getElementById('lifepilot-boot');
-          if(root&&root.childElementCount===0&&boot)showError();
-        },15000);
-      })();
-    </script>
-    <script type="module" src="/src/main.jsx?v=20260819-1830"></script>
+    <script type="module" src="/src/stable-app.jsx?v=20260819-stable1"></script>
   </body>
 </html>
