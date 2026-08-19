@@ -1,170 +1,489 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { createRoot } from 'react-dom/client'
+ import React, { useEffect, useMemo, useState } from "react";
+import { createRoot } from "react-dom/client";
 import {
   ArrowRight,
   BarChart3,
-  Bell,
-  BookOpen,
   Check,
   ChevronRight,
   Flame,
-  HeartPulse,
+  LogOut,
   Menu,
   MessageCircle,
-  MoreHorizontal,
-  PiggyBank,
   Plus,
-  Rocket,
   Settings,
-  Share2,
   Sparkles,
   Target,
   Trophy,
-  Wallet,
+  User,
   X,
-} from 'lucide-react'
-import './styles.css'
-
-const STORAGE_KEY = 'lifepilot_demo_v1'
-
-const starterGoals = [
-  {
-    id: 'starter-1',
-    title: 'Allenarmi 3 volte a settimana',
-    category: 'Fitness',
-    days: 30,
-    color: 'violet',
-    progress: 37,
-    streak: 6,
-    today: [
-      '25 min di allenamento',
-      'Bere 2 litri d’acqua',
-      'Camminare almeno 7.000 passi',
-    ],
-  },
-]
-
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : { goals: starterGoals, activeId: 'starter-1' }
-  } catch {
-    return { goals: starterGoals, activeId: 'starter-1' }
-  }
-}
+} from "lucide-react";
+import { supabase, supabaseEnabled } from "./lib/supabase";
+import "./styles.css";
 
 function App() {
-  const [state, setState] = useState(loadState)
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const [createOpen, setCreateOpen] = useState(false)
-  const [shareOpen, setShareOpen] = useState(false)
-  const [view, setView] = useState('home')
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  }, [state])
+    let mounted = true;
 
-  const active = useMemo(
-    () => state.goals.find((g) => g.id === state.activeId) || state.goals[0],
-    [state]
-  )
+    async function loadSession() {
+      if (!supabaseEnabled || !supabase) {
+        setLoading(false);
+        return;
+      }
 
-  function setActive(id) {
-    setState((s) => ({ ...s, activeId: id }))
-    setView('home')
-  }
+      const { data } = await supabase.auth.getSession();
 
-  function toggleTask(index) {
-    setState((s) => ({
-      ...s,
-      goals: s.goals.map((g) =>
-        g.id === active.id
-          ? {
-              ...g,
-              progress: Math.min(100, g.progress + 4),
-              today: g.today.filter((_, i) => i !== index),
-            }
-          : g
-      ),
-    }))
-  }
-
-  function createGoal(goal) {
-    const newGoal = {
-      ...goal,
-      id: `goal-${Date.now()}`,
-      progress: 4,
-      streak: 0,
-      today: goal.today || [],
+      if (mounted) {
+        setSession(data.session ?? null);
+        setLoading(false);
+      }
     }
-    setState((s) => ({
-      ...s,
-      goals: [newGoal, ...s.goals],
-      activeId: newGoal.id,
-    }))
-    setCreateOpen(false)
-    setView('home')
+
+    loadSession();
+
+    if (!supabaseEnabled || !supabase) return;
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession ?? null);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  if (loading) {
+    return <LoadingScreen />;
   }
 
-  const content = (
-    <>
-      {view === 'home' && (
-        <Dashboard
-          active={active}
-          goals={state.goals}
-          onCreate={() => setCreateOpen(true)}
-          onTask={toggleTask}
-          onShare={() => setShareOpen(true)}
-          onChangeGoal={setActive}
-        />
-      )}
+  if (!supabaseEnabled) {
+    return (
+      <div className="auth-page">
+        <div className="auth-card">
+          <div className="brand large">
+            <span className="brand-mark">
+              <Sparkles size={18} />
+            </span>
+            <span>LifePilot</span>
+          </div>
 
-      {view === 'goals' && (
-        <Goals
-          goals={state.goals}
-          activeId={state.activeId}
-          onSelect={setActive}
-          onCreate={() => setCreateOpen(true)}
-        />
-      )}
+          <h1>Configurazione incompleta</h1>
 
-      {view === 'coach' && <Coach active={active} />}
+          <p>
+            LifePilot non riesce a collegarsi a Supabase.
+            Controlla le variabili Vercel.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
-      {view === 'progress' && <Progress active={active} goals={state.goals} />}
+  if (!session) {
+    return <AuthScreen />;
+  }
 
-      {view === 'profile' && <Profile />}
-    </>
-  )
+  return <Dashboard session={session} />;
+}
+
+function LoadingScreen() {
+  return (
+    <div className="loading-screen">
+      <div className="loading-logo">
+        <Sparkles size={22} />
+      </div>
+      <strong>LifePilot</strong>
+      <span>Caricamento...</span>
+    </div>
+  );
+}
+
+function AuthScreen() {
+  const [mode, setMode] = useState("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  async function handleEmailAuth(e) {
+    e.preventDefault();
+
+    setBusy(true);
+    setError("");
+    setMessage("");
+
+    try {
+      if (mode === "signup") {
+        if (!name.trim()) {
+          throw new Error("Inserisci il tuo nome.");
+        }
+
+        const { data, error: signUpError } =
+          await supabase.auth.signUp({
+            email: email.trim(),
+            password,
+            options: {
+              data: {
+                full_name: name.trim(),
+              },
+            },
+          });
+
+        if (signUpError) throw signUpError;
+
+        if (!data.session) {
+          setMessage(
+            "Account creato. Controlla la tua email per confermare l'account."
+          );
+        }
+      } else {
+        const { error: signInError } =
+          await supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password,
+          });
+
+        if (signInError) throw signInError;
+      }
+    } catch (err) {
+      setError(getAuthError(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleGoogle() {
+    setBusy(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const redirectTo = `${window.location.origin}/`;
+
+      const { error: googleError } =
+        await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo,
+          },
+        });
+
+      if (googleError) throw googleError;
+    } catch (err) {
+      setError(
+        err?.message ||
+          "Impossibile avviare l'accesso con Google."
+      );
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="auth-page">
+      <div className="auth-background">
+        <div className="auth-orb orb-one" />
+        <div className="auth-orb orb-two" />
+      </div>
+
+      <main className="auth-card">
+        <div className="auth-brand">
+          <div className="brand-mark">
+            <Sparkles size={19} />
+          </div>
+          <span>LifePilot</span>
+        </div>
+
+        <div className="auth-heading">
+          <span className="eyebrow">IL TUO PERCORSO</span>
+
+          <h1>
+            {mode === "login"
+              ? "Bentornato."
+              : "Inizia il tuo percorso."}
+          </h1>
+
+          <p>
+            {mode === "login"
+              ? "Accedi per continuare da dove avevi lasciato."
+              : "Crea il tuo account e trasforma i tuoi obiettivi in azioni quotidiane."}
+          </p>
+        </div>
+
+        <button
+          className="google-btn"
+          onClick={handleGoogle}
+          disabled={busy}
+          type="button"
+        >
+          <GoogleIcon />
+          Continua con Google
+        </button>
+
+        <div className="auth-divider">
+          <span>oppure</span>
+        </div>
+
+        <form onSubmit={handleEmailAuth} className="auth-form">
+          {mode === "signup" && (
+            <label>
+              Nome
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Il tuo nome"
+                autoComplete="name"
+              />
+            </label>
+          )}
+
+          <label>
+            Email
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="nome@email.com"
+              autoComplete="email"
+              required
+            />
+          </label>
+
+          <label>
+            Password
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Almeno 6 caratteri"
+              minLength={6}
+              autoComplete={
+                mode === "login"
+                  ? "current-password"
+                  : "new-password"
+              }
+              required
+            />
+          </label>
+
+          {error && (
+            <div className="auth-message error">
+              {error}
+            </div>
+          )}
+
+          {message && (
+            <div className="auth-message success">
+              {message}
+            </div>
+          )}
+
+          <button
+            className="primary-btn auth-submit"
+            disabled={busy}
+            type="submit"
+          >
+            {busy
+              ? "Attendi..."
+              : mode === "login"
+              ? "Accedi"
+              : "Crea account"}
+
+            {!busy && <ArrowRight size={17} />}
+          </button>
+        </form>
+
+        <div className="auth-switch">
+          <span>
+            {mode === "login"
+              ? "Non hai ancora un account?"
+              : "Hai già un account?"}
+          </span>
+
+          <button
+            type="button"
+            onClick={() => {
+              setMode(mode === "login" ? "signup" : "login");
+              setError("");
+              setMessage("");
+            }}
+          >
+            {mode === "login"
+              ? "Registrati"
+              : "Accedi"}
+          </button>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function Dashboard({ session }) {
+  const [view, setView] = useState("home");
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [goals, setGoals] = useState([]);
+  const [loadingGoals, setLoadingGoals] = useState(true);
+  const [createOpen, setCreateOpen] = useState(false);
+
+  const user = session.user;
+
+  const userName =
+    user.user_metadata?.full_name ||
+    user.user_metadata?.name ||
+    user.email?.split("@")[0] ||
+    "utente";
+
+  const activeGoal = useMemo(
+    () => goals[0] || null,
+    [goals]
+  );
+
+  useEffect(() => {
+    loadGoals();
+  }, [user.id]);
+
+  async function loadGoals() {
+    setLoadingGoals(true);
+
+    const { data, error } = await supabase
+      .from("goals")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", {
+        ascending: false,
+      });
+
+    if (!error) {
+      setGoals(data || []);
+    }
+
+    setLoadingGoals(false);
+  }
+
+  async function createGoal(goal) {
+    const { data, error } = await supabase
+      .from("goals")
+      .insert({
+        user_id: user.id,
+        title: goal.title,
+        category: goal.category,
+        duration_days: Number(goal.duration_days),
+        progress: 0,
+        streak: 0,
+      })
+      .select()
+      .single();
+
+    if (!error && data) {
+      setGoals((current) => [data, ...current]);
+      setCreateOpen(false);
+    } else {
+      alert(
+        error?.message ||
+          "Non è stato possibile creare l'obiettivo."
+      );
+    }
+  }
+
+  async function deleteGoal(id) {
+    const confirmed = window.confirm(
+      "Vuoi eliminare definitivamente questo obiettivo?"
+    );
+
+    if (!confirmed) return;
+
+    const { error } = await supabase
+      .from("goals")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", user.id);
+
+    if (!error) {
+      setGoals((current) =>
+        current.filter((goal) => goal.id !== id)
+      );
+    }
+  }
+
+  async function logout() {
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    setView("home");
+  }
 
   return (
     <div className="app">
       <header className="topbar">
         <div className="topbar-inner">
-          <button className="mobile-menu" onClick={() => setMobileOpen(true)}>
+          <button
+            className="mobile-menu"
+            onClick={() => setMobileOpen(true)}
+          >
             <Menu size={22} />
           </button>
-          <button className="brand" onClick={() => setView('home')}>
-            <span className="brand-mark"><Sparkles size={17} /></span>
+
+          <button
+            className="brand"
+            onClick={() => setView("home")}
+          >
+            <span className="brand-mark">
+              <Sparkles size={17} />
+            </span>
+
             <span>LifePilot</span>
           </button>
+
           <div className="topbar-actions">
-            <button className="icon-btn"><Bell size={19} /></button>
-            <div className="avatar">A</div>
+            <div className="user-mini">
+              {getInitial(userName)}
+            </div>
           </div>
         </div>
       </header>
 
       {mobileOpen && (
-        <div className="mobile-drawer-backdrop" onClick={() => setMobileOpen(false)}>
-          <aside className="mobile-drawer" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="mobile-drawer-backdrop"
+          onClick={() => setMobileOpen(false)}
+        >
+          <aside
+            className="mobile-drawer"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="drawer-head">
               <div className="brand">
-                <span className="brand-mark"><Sparkles size={17} /></span>
+                <span className="brand-mark">
+                  <Sparkles size={17} />
+                </span>
                 <span>LifePilot</span>
               </div>
-              <button className="icon-btn" onClick={() => setMobileOpen(false)}><X size={20}/></button>
+
+              <button
+                className="icon-btn"
+                onClick={() => setMobileOpen(false)}
+              >
+                <X size={20} />
+              </button>
             </div>
-            <Nav view={view} setView={(v) => { setView(v); setMobileOpen(false) }} />
+
+            <Nav
+              view={view}
+              setView={(next) => {
+                setView(next);
+                setMobileOpen(false);
+              }}
+            />
           </aside>
         </div>
       )}
@@ -172,318 +491,905 @@ function App() {
       <div className="page-shell">
         <aside className="sidebar">
           <div className="sidebar-section">
-            <div className="eyebrow">Il mio spazio</div>
-            <Nav view={view} setView={setView} />
+            <div className="eyebrow">IL MIO SPAZIO</div>
+
+            <Nav
+              view={view}
+              setView={setView}
+            />
           </div>
 
-          <div className="upgrade-card">
-            <div className="upgrade-icon"><Rocket size={18}/></div>
-            <strong>Prova LifePilot Pro</strong>
-            <p>Piani avanzati, obiettivi illimitati e coaching AI.</p>
-            <button onClick={() => setShareOpen(true)}>Scopri Pro <ArrowRight size={14}/></button>
+          <div className="account-card">
+            <div className="account-avatar">
+              {getInitial(userName)}
+            </div>
+
+            <strong>{userName}</strong>
+
+            <span>{user.email}</span>
+
+            <button
+              className="logout-btn"
+              onClick={logout}
+            >
+              <LogOut size={16} />
+              Esci
+            </button>
           </div>
         </aside>
 
-        <main className="main-content">{content}</main>
+        <main className="main-content">
+          {view === "home" && (
+            <Home
+              name={userName}
+              goal={activeGoal}
+              goals={goals}
+              loading={loadingGoals}
+              onCreate={() => setCreateOpen(true)}
+              onDelete={deleteGoal}
+            />
+          )}
+
+          {view === "goals" && (
+            <Goals
+              goals={goals}
+              loading={loadingGoals}
+              onCreate={() => setCreateOpen(true)}
+              onDelete={deleteGoal}
+            />
+          )}
+
+          {view === "progress" && (
+            <Progress goals={goals} />
+          )}
+
+          {view === "coach" && (
+            <Coach />
+          )}
+
+          {view === "profile" && (
+            <Profile
+              user={user}
+              name={userName}
+              onLogout={logout}
+            />
+          )}
+        </main>
       </div>
 
       <nav className="bottom-nav">
-        <BottomNavItem icon={<Target size={20}/>} label="Oggi" active={view === 'home'} onClick={() => setView('home')} />
-        <BottomNavItem icon={<BarChart3 size={20}/>} label="Progressi" active={view === 'progress'} onClick={() => setView('progress')} />
-        <button className="fab" onClick={() => setCreateOpen(true)}><Plus size={25}/></button>
-        <BottomNavItem icon={<MessageCircle size={20}/>} label="Coach" active={view === 'coach'} onClick={() => setView('coach')} />
-        <BottomNavItem icon={<Settings size={20}/>} label="Profilo" active={view === 'profile'} onClick={() => setView('profile')} />
+        <BottomNavItem
+          icon={<Target size={20} />}
+          label="Oggi"
+          active={view === "home"}
+          onClick={() => setView("home")}
+        />
+
+        <BottomNavItem
+          icon={<BarChart3 size={20} />}
+          label="Progressi"
+          active={view === "progress"}
+          onClick={() => setView("progress")}
+        />
+
+        <button
+          className="fab"
+          onClick={() => setCreateOpen(true)}
+        >
+          <Plus size={25} />
+        </button>
+
+        <BottomNavItem
+          icon={<MessageCircle size={20} />}
+          label="Coach"
+          active={view === "coach"}
+          onClick={() => setView("coach")}
+        />
+
+        <BottomNavItem
+          icon={<Settings size={20} />}
+          label="Profilo"
+          active={view === "profile"}
+          onClick={() => setView("profile")}
+        />
       </nav>
 
       {createOpen && (
-        <CreateGoalModal onClose={() => setCreateOpen(false)} onCreate={createGoal} />
-      )}
-
-      {shareOpen && (
-        <ShareModal active={active} onClose={() => setShareOpen(false)} />
+        <CreateGoalModal
+          onClose={() => setCreateOpen(false)}
+          onCreate={createGoal}
+        />
       )}
     </div>
-  )
+  );
 }
 
 function Nav({ view, setView }) {
   return (
     <nav className="nav-list">
-      <button className={view === 'home' ? 'nav-item active' : 'nav-item'} onClick={() => setView('home')}>
-        <Target size={18} /> Oggi
+      <button
+        className={
+          view === "home"
+            ? "nav-item active"
+            : "nav-item"
+        }
+        onClick={() => setView("home")}
+      >
+        <Target size={18} />
+        Oggi
       </button>
-      <button className={view === 'goals' ? 'nav-item active' : 'nav-item'} onClick={() => setView('goals')}>
-        <Trophy size={18} /> I miei obiettivi
+
+      <button
+        className={
+          view === "goals"
+            ? "nav-item active"
+            : "nav-item"
+        }
+        onClick={() => setView("goals")}
+      >
+        <Trophy size={18} />
+        I miei obiettivi
       </button>
-      <button className={view === 'coach' ? 'nav-item active' : 'nav-item'} onClick={() => setView('coach')}>
-        <MessageCircle size={18} /> Coach AI
+
+      <button
+        className={
+          view === "coach"
+            ? "nav-item active"
+            : "nav-item"
+        }
+        onClick={() => setView("coach")}
+      >
+        <MessageCircle size={18} />
+        Coach AI
       </button>
-      <button className={view === 'progress' ? 'nav-item active' : 'nav-item'} onClick={() => setView('progress')}>
-        <BarChart3 size={18} /> Progressi
+
+      <button
+        className={
+          view === "progress"
+            ? "nav-item active"
+            : "nav-item"
+        }
+        onClick={() => setView("progress")}
+      >
+        <BarChart3 size={18} />
+        Progressi
       </button>
-      <button className={view === 'profile' ? 'nav-item active' : 'nav-item'} onClick={() => setView('profile')}>
-        <Settings size={18} /> Impostazioni
+
+      <button
+        className={
+          view === "profile"
+            ? "nav-item active"
+            : "nav-item"
+        }
+        onClick={() => setView("profile")}
+      >
+        <Settings size={18} />
+        Profilo
       </button>
     </nav>
-  )
+  );
 }
 
-function BottomNavItem({ icon, label, active, onClick }) {
-  return (
-    <button className={active ? 'bottom-item active' : 'bottom-item'} onClick={onClick}>
-      {icon}<span>{label}</span>
-    </button>
-  )
-}
-
-function Dashboard({ active, goals, onCreate, onTask, onShare, onChangeGoal }) {
+function Home({
+  name,
+  goal,
+  goals,
+  loading,
+  onCreate,
+  onDelete,
+}) {
   return (
     <div className="stack">
       <section className="hero-row">
         <div>
-          <div className="eyebrow">MARTEDÌ · 18 AGOSTO</div>
-          <h1>Buongiorno, Alex.</h1>
-          <p>Piccoli passi oggi. Grandi risultati tra qualche settimana.</p>
+          <div className="eyebrow">
+            IL TUO OBIETTIVO
+          </div>
+
+          <h1>
+            Buongiorno, {capitalize(name)}.
+          </h1>
+
+          <p>
+            Piccoli passi oggi. Grandi risultati nel tempo.
+          </p>
         </div>
-        <button className="primary-btn" onClick={onCreate}><Plus size={18}/> Nuovo obiettivo</button>
+
+        <button
+          className="primary-btn"
+          onClick={onCreate}
+        >
+          <Plus size={18} />
+          Nuovo obiettivo
+        </button>
       </section>
 
-      <section className="streak-strip">
-        <div className="streak-main">
-          <span className="fire"><Flame size={19}/></span>
-          <div><strong>{active.streak} giorni</strong><span>di fila</span></div>
+      {loading ? (
+        <div className="panel loading-panel">
+          Caricamento dei tuoi obiettivi...
         </div>
-        <div className="streak-track"><span style={{ width: `${Math.min(100, active.streak * 10)}%` }} /></div>
-        <span className="streak-copy">Continua così</span>
-      </section>
+      ) : !goal ? (
+        <EmptyGoals onCreate={onCreate} />
+      ) : (
+        <>
+          <section className="streak-strip">
+            <div className="streak-main">
+              <span className="fire">
+                <Flame size={19} />
+              </span>
 
-      <section className="goal-switcher">
-        <div className="section-heading">
-          <div><h2>Il tuo obiettivo</h2><p>Scegli su cosa concentrarti oggi.</p></div>
-          <button className="link-btn" onClick={onCreate}>+ Aggiungi</button>
-        </div>
-        <div className="goal-cards">
-          {goals.map((goal) => (
-            <button
-              key={goal.id}
-              onClick={() => onChangeGoal(goal.id)}
-              className={goal.id === active.id ? 'goal-card selected' : 'goal-card'}
-            >
-              <div className={`goal-icon ${goal.color}`}><Target size={20}/></div>
-              <div className="goal-card-copy">
-                <strong>{goal.title}</strong>
-                <span>{goal.category} · {goal.days} giorni</span>
+              <div>
+                <strong>
+                  {goal.streak || 0} giorni
+                </strong>
+
+                <span>di fila</span>
               </div>
-              <div className="goal-progress">{goal.progress}%</div>
-              <ChevronRight size={17}/>
-            </button>
-          ))}
-        </div>
-      </section>
+            </div>
 
-      <section className="today-card">
-        <div className="today-head">
-          <div>
-            <div className="eyebrow">OGGI</div>
-            <h2>Una giornata alla volta.</h2>
-            <p>Completa queste azioni per far avanzare il tuo percorso.</p>
-          </div>
-          <div className="today-ring">
-            <span>{Math.max(0, 100 - active.today.length * 25)}%</span>
-            <small>fatto</small>
-          </div>
-        </div>
+            <div className="streak-track">
+              <span
+                style={{
+                  width: `${Math.min(
+                    100,
+                    (goal.streak || 0) * 10
+                  )}%`,
+                }}
+              />
+            </div>
 
-        <div className="task-list">
-          {active.today.length === 0 && (
-            <div className="empty-state"><Check size={24}/><strong>Giornata completata!</strong><span>Domani LifePilot ti preparerà il prossimo passo.</span></div>
-          )}
-          {active.today.map((task, index) => (
-            <label className="task" key={`${task}-${index}`}>
-              <input type="checkbox" onChange={() => onTask(index)} />
-              <span className="task-box"><Check size={14}/></span>
-              <span className="task-copy">{task}</span>
-              <span className="task-arrow">→</span>
-            </label>
-          ))}
-        </div>
+            <span className="streak-copy">
+              Continua così
+            </span>
+          </section>
 
-        <div className="today-footer">
-          <div className="goal-bar"><span style={{width:`${active.progress}%`}} /></div>
-          <div className="today-progress">{active.progress}% percorso completato</div>
-        </div>
-      </section>
+          <section className="today-card">
+            <div className="today-head">
+              <div>
+                <div className="eyebrow">
+                  OBIETTIVO ATTIVO
+                </div>
 
-      <section className="insight-grid">
-        <article className="insight-card">
-          <div className="insight-icon violet"><Sparkles size={18}/></div>
-          <div><span className="eyebrow">COACH AI</span><h3>Hai 20 minuti oggi?</h3><p>Posso comprimere il piano di oggi in una versione più veloce.</p><button className="text-link">Apri Coach <ArrowRight size={14}/></button></div>
-        </article>
-        <article className="insight-card">
-          <div className="insight-icon green"><Share2 size={18}/></div>
-          <div><span className="eyebrow">CONDIVIDI</span><h3>Mostra il tuo percorso</h3><p>Crea una card con la tua streak da condividere.</p><button className="text-link" onClick={onShare}>Condividi <ArrowRight size={14}/></button></div>
-        </article>
-      </section>
+                <h2>{goal.title}</h2>
+
+                <p>
+                  {goal.category} ·{" "}
+                  {goal.duration_days} giorni
+                </p>
+              </div>
+
+              <div className="today-ring">
+                <span>
+                  {goal.progress || 0}%
+                </span>
+
+                <small>completato</small>
+              </div>
+            </div>
+
+            <div className="goal-bar">
+              <span
+                style={{
+                  width: `${goal.progress || 0}%`,
+                }}
+              />
+            </div>
+
+            <div className="today-footer">
+              <span>
+                Il tuo percorso è salvato nel tuo account.
+              </span>
+
+              <button
+                className="danger-link"
+                onClick={() => onDelete(goal.id)}
+              >
+                Elimina obiettivo
+              </button>
+            </div>
+          </section>
+
+          <section className="grid-2">
+            {goals.slice(0, 4).map((item) => (
+              <div
+                className="panel goal-panel"
+                key={item.id}
+              >
+                <div className="goal-icon violet">
+                  <Target size={20} />
+                </div>
+
+                <div className="goal-panel-head">
+                  <span>{item.category}</span>
+                  <strong>
+                    {item.progress || 0}%
+                  </strong>
+                </div>
+
+                <h3>{item.title}</h3>
+
+                <p>
+                  {item.duration_days} giorni
+                </p>
+
+                <div className="goal-bar">
+                  <span
+                    style={{
+                      width: `${item.progress || 0}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </section>
+        </>
+      )}
     </div>
-  )
+  );
 }
 
-function Goals({ goals, activeId, onSelect, onCreate }) {
+function EmptyGoals({ onCreate }) {
+  return (
+    <section className="empty-goals">
+      <div className="empty-icon">
+        <Target size={28} />
+      </div>
+
+      <h2>Ancora nessun obiettivo.</h2>
+
+      <p>
+        Crea il tuo primo obiettivo e inizia il tuo
+        percorso con LifePilot.
+      </p>
+
+      <button
+        className="primary-btn"
+        onClick={onCreate}
+      >
+        <Plus size={18} />
+        Crea il primo obiettivo
+      </button>
+    </section>
+  );
+}
+
+function Goals({
+  goals,
+  loading,
+  onCreate,
+  onDelete,
+}) {
   return (
     <div className="stack">
       <section className="hero-row">
-        <div><div className="eyebrow">OBIETTIVI</div><h1>I miei obiettivi</h1><p>Costruisci più percorsi e torna ogni giorno al passo successivo.</p></div>
-        <button className="primary-btn" onClick={onCreate}><Plus size={18}/> Nuovo obiettivo</button>
+        <div>
+          <div className="eyebrow">
+            OBIETTIVI
+          </div>
+
+          <h1>I miei obiettivi</h1>
+
+          <p>
+            Tutto ciò che vuoi costruire, in un unico
+            posto.
+          </p>
+        </div>
+
+        <button
+          className="primary-btn"
+          onClick={onCreate}
+        >
+          <Plus size={18} />
+          Nuovo obiettivo
+        </button>
       </section>
 
-      <div className="grid-2">
-        {goals.map(g => (
-          <button key={g.id} className={g.id === activeId ? "panel goal-panel active-panel" : "panel goal-panel"} onClick={() => onSelect(g.id)}>
-            <div className={`goal-icon ${g.color}`}><Target size={20}/></div>
-            <div className="goal-panel-head"><span>{g.category}</span><span>{g.progress}%</span></div>
-            <h3>{g.title}</h3>
-            <p>{g.days} giorni · {g.streak} giorni di streak</p>
-            <div className="goal-bar"><span style={{width:`${g.progress}%`}} /></div>
-          </button>
-        ))}
-      </div>
+      {loading ? (
+        <div className="panel loading-panel">
+          Caricamento...
+        </div>
+      ) : goals.length === 0 ? (
+        <EmptyGoals onCreate={onCreate} />
+      ) : (
+        <div className="grid-2">
+          {goals.map((goal) => (
+            <article
+              className="panel goal-panel"
+              key={goal.id}
+            >
+              <div className="goal-icon violet">
+                <Target size={20} />
+              </div>
+
+              <div className="goal-panel-head">
+                <span>{goal.category}</span>
+
+                <strong>
+                  {goal.progress || 0}%
+                </strong>
+              </div>
+
+              <h3>{goal.title}</h3>
+
+              <p>
+                {goal.duration_days} giorni ·{" "}
+                {goal.streak || 0} giorni di streak
+              </p>
+
+              <div className="goal-bar">
+                <span
+                  style={{
+                    width: `${goal.progress || 0}%`,
+                  }}
+                />
+              </div>
+
+              <button
+                className="danger-link"
+                onClick={() => onDelete(goal.id)}
+              >
+                Elimina
+              </button>
+            </article>
+          ))}
+        </div>
+      )}
     </div>
-  )
+  );
 }
 
-function Coach({ active }) {
-  const [message, setMessage] = useState('')
+function Progress({ goals }) {
+  const average =
+    goals.length === 0
+      ? 0
+      : Math.round(
+          goals.reduce(
+            (sum, goal) =>
+              sum + Number(goal.progress || 0),
+            0
+          ) / goals.length
+        );
+
+  return (
+    <div className="stack">
+      <section className="hero-row">
+        <div>
+          <div className="eyebrow">
+            PROGRESSI
+          </div>
+
+          <h1>Stai andando avanti.</h1>
+
+          <p>
+            Guarda il quadro generale dei tuoi obiettivi.
+          </p>
+        </div>
+      </section>
+
+      <section className="stats-grid">
+        <div className="stat-card">
+          <Target size={20} />
+          <span>Obiettivi</span>
+          <strong>{goals.length}</strong>
+        </div>
+
+        <div className="stat-card">
+          <Trophy size={20} />
+          <span>Progressi medi</span>
+          <strong>{average}%</strong>
+        </div>
+
+        <div className="stat-card">
+          <Flame size={20} />
+          <span>Streak migliore</span>
+          <strong>
+            {Math.max(
+              0,
+              ...goals.map(
+                (goal) => Number(goal.streak || 0)
+              )
+            )}
+          </strong>
+        </div>
+      </section>
+
+      <section className="panel">
+        <div className="section-heading">
+          <div>
+            <h2>Panoramica</h2>
+            <p>
+              Il progresso dei tuoi obiettivi.
+            </p>
+          </div>
+        </div>
+
+        <div className="progress-list">
+          {goals.map((goal) => (
+            <div
+              className="progress-row"
+              key={goal.id}
+            >
+              <div>
+                <strong>{goal.title}</strong>
+                <span>{goal.category}</span>
+              </div>
+
+              <div className="progress-value">
+                {goal.progress || 0}%
+              </div>
+            </div>
+          ))}
+
+          {goals.length === 0 && (
+            <p className="muted">
+              Crea il tuo primo obiettivo per vedere i
+              progressi.
+            </p>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function Coach() {
+  const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([
-    { role: 'assistant', text: `Sto seguendo il tuo obiettivo "${active.title}". Dimmi cosa ti blocca oggi.` },
-  ])
+    {
+      role: "assistant",
+      text:
+        "Ciao! Sono il Coach di LifePilot. Raccontami cosa vuoi migliorare oggi.",
+    },
+  ]);
 
   function send() {
-    const text = message.trim()
-    if (!text) return
-    setMessages(m => [...m, { role: 'user', text }, { role: 'assistant', text: 'Ottimo. Riduciamo il prossimo passo: fai solo 10 minuti adesso, poi rivalutiamo.' }])
-    setMessage('')
+    const text = message.trim();
+
+    if (!text) return;
+
+    setMessages((current) => [
+      ...current,
+      {
+        role: "user",
+        text,
+      },
+      {
+        role: "assistant",
+        text:
+          "Ho ricevuto il tuo messaggio. Il collegamento al Coach AI verrà utilizzato qui per costruire il prossimo passo personalizzato.",
+      },
+    ]);
+
+    setMessage("");
   }
 
   return (
     <div className="stack">
       <section className="hero-row">
-        <div><div className="eyebrow">COACH AI</div><h1>Non devi fare tutto oggi.</h1><p>Usa il coach per sbloccare il prossimo passo.</p></div>
+        <div>
+          <div className="eyebrow">
+            COACH AI
+          </div>
+
+          <h1>Un passo alla volta.</h1>
+
+          <p>
+            Scrivi cosa vuoi ottenere o cosa ti sta
+            bloccando.
+          </p>
+        </div>
       </section>
+
       <section className="coach-panel">
         <div className="chat">
-          {messages.map((m, i) => <div key={i} className={m.role === 'user' ? 'chat-row user' : 'chat-row'}><div className={m.role === 'assistant' ? 'chat-avatar' : 'chat-user'}>{m.role === 'assistant' ? <Sparkles size={16}/> : 'A'}</div><div className="chat-bubble">{m.text}</div></div>)}
+          {messages.map((item, index) => (
+            <div
+              className={
+                item.role === "user"
+                  ? "chat-row user"
+                  : "chat-row"
+              }
+              key={index}
+            >
+              <div
+                className={
+                  item.role === "user"
+                    ? "chat-user"
+                    : "chat-avatar"
+                }
+              >
+                {item.role === "user" ? (
+                  <User size={16} />
+                ) : (
+                  <Sparkles size={16} />
+                )}
+              </div>
+
+              <div className="chat-bubble">
+                {item.text}
+              </div>
+            </div>
+          ))}
         </div>
+
         <div className="chat-composer">
-          <input value={message} onChange={e => setMessage(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} placeholder="Scrivi cosa ti sta bloccando..." />
-          <button className="primary-btn icon-only" onClick={send}><ArrowRight size={18}/></button>
+          <input
+            value={message}
+            onChange={(e) =>
+              setMessage(e.target.value)
+            }
+            onKeyDown={(e) => {
+              if (e.key === "Enter") send();
+            }}
+            placeholder="Scrivi un messaggio..."
+          />
+
+          <button
+            className="primary-btn icon-only"
+            onClick={send}
+          >
+            <ArrowRight size={18} />
+          </button>
         </div>
       </section>
     </div>
-  )
+  );
 }
 
-function Progress({ active, goals }) {
+function Profile({
+  user,
+  name,
+  onLogout,
+}) {
   return (
     <div className="stack">
       <section className="hero-row">
-        <div><div className="eyebrow">PROGRESSI</div><h1>Stai andando avanti.</h1><p>Non serve essere perfetti. Serve continuare.</p></div>
-      </section>
+        <div>
+          <div className="eyebrow">
+            PROFILO
+          </div>
 
-      <div className="stats-grid">
-        <div className="stat"><span className="eyebrow">STREAK</span><strong>{active.streak}</strong><small>giorni</small></div>
-        <div className="stat"><span className="eyebrow">PERCORSO</span><strong>{active.progress}%</strong><small>completato</small></div>
-        <div className="stat"><span className="eyebrow">OBIETTIVI</span><strong>{goals.length}</strong><small>attivi</small></div>
-      </div>
+          <h1>Il tuo account.</h1>
 
-      <section className="panel chart-panel">
-        <div className="section-heading"><div><h2>Andamento ultimi 14 giorni</h2><p>Un piccolo ritmo sostenibile batte gli sprint.</p></div><BarChart3 size={22} color="#6c5ce7"/></div>
-        <div className="bars">
-          {[35,52,40,70,58,76,88,66,78,92,84,71,95,88].map((v,i) => <div className="bar-wrap" key={i}><div className="bar" style={{height:`${v}%`}}/><span>{i+1}</span></div>)}
+          <p>
+            Gestisci il tuo profilo LifePilot.
+          </p>
         </div>
       </section>
-    </div>
-  )
-}
 
-function Profile() {
-  return (
-    <div className="stack">
-      <section className="hero-row"><div><div className="eyebrow">PROFILO</div><h1>Le tue preferenze.</h1><p>In questa demo salviamo i dati localmente.</p></div></section>
-      <section className="panel profile-panel">
-        <div className="profile-large"><div className="avatar big">A</div><div><h2>Alex</h2><p>Utente Demo</p></div></div>
-        <div className="settings-row"><div><strong>Notifiche giornaliere</strong><span>Ricordami il prossimo passo alle 09:00</span></div><div className="switch on"><span/></div></div>
-        <div className="settings-row"><div><strong>Modalità focus</strong><span>Riduci le distrazioni durante le attività</span></div><div className="switch"><span/></div></div>
-        <div className="settings-row"><div><strong>Privacy</strong><span>I tuoi dati demo rimangono sul dispositivo</span></div><ChevronRight size={18}/></div>
+      <section className="profile-card panel">
+        <div className="profile-avatar">
+          {getInitial(name)}
+        </div>
+
+        <div className="profile-info">
+          <span>Nome</span>
+          <strong>{name}</strong>
+
+          <span>Email</span>
+          <strong>{user.email}</strong>
+        </div>
       </section>
+
+      <button
+        className="logout-large"
+        onClick={onLogout}
+      >
+        <LogOut size={18} />
+        Esci da LifePilot
+      </button>
     </div>
-  )
+  );
 }
 
-function CreateGoalModal({ onClose, onCreate }) {
-  const [title, setTitle] = useState('')
-  const [category, setCategory] = useState('Produttività')
-  const [days, setDays] = useState('30')
-  const [time, setTime] = useState('20')
+function CreateGoalModal({
+  onClose,
+  onCreate,
+}) {
+  const [title, setTitle] = useState("");
+  const [category, setCategory] =
+    useState("Personale");
+  const [duration, setDuration] =
+    useState(30);
+  const [busy, setBusy] = useState(false);
 
-  function submit(e) {
-    e.preventDefault()
-    if (!title.trim()) return
-    const today = [
-      `Dedica ${time} minuti al tuo obiettivo`,
-      'Completa una micro-azione senza distrazioni',
-      'Fai un check-in serale di 2 minuti',
-    ]
-    onCreate({ title: title.trim(), category, days: Number(days), color: categoryColor(category), today })
+  async function submit(e) {
+    e.preventDefault();
+
+    if (!title.trim()) return;
+
+    setBusy(true);
+
+    await onCreate({
+      title: title.trim(),
+      category,
+      duration_days: duration,
+    });
+
+    setBusy(false);
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-sheet" onClick={e => e.stopPropagation()}>
-        <div className="modal-head"><div><span className="eyebrow">NUOVO OBIETTIVO</span><h2>Partiamo da un traguardo.</h2></div><button className="icon-btn" onClick={onClose}><X size={20}/></button></div>
-        <form onSubmit={submit} className="form-stack">
-          <label>Qual è il tuo obiettivo?<input autoFocus value={title} onChange={e => setTitle(e.target.value)} placeholder="Es. Imparare l'inglese" /></label>
-          <div className="grid-2 form-row">
-            <label>Categoria<select value={category} onChange={e => setCategory(e.target.value)}><option>Fitness</option><option>Studio</option><option>Finanze</option><option>Produttività</option><option>Lingue</option><option>Lavoro</option></select></label>
-            <label>Durata<select value={days} onChange={e => setDays(e.target.value)}><option value="14">14 giorni</option><option value="30">30 giorni</option><option value="60">60 giorni</option><option value="90">90 giorni</option></select></label>
+    <div
+      className="modal-backdrop"
+      onClick={onClose}
+    >
+      <div
+        className="modal-card"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-head">
+          <div>
+            <span className="eyebrow">
+              NUOVO PERCORSO
+            </span>
+
+            <h2>Crea un obiettivo</h2>
           </div>
-          <label>Quanto tempo hai ogni giorno?<div className="range-row"><input type="range" min="5" max="90" value={time} onChange={e => setTime(e.target.value)} /><strong>{time} min</strong></div></label>
-          <div className="ai-note"><Sparkles size={17}/><div><strong>LifePilot farà il resto.</strong><span>Creeremo un piano semplice, quotidiano e adattabile.</span></div></div>
-          <button className="primary-btn full" type="submit"><Rocket size={18}/> Crea il mio piano</button>
+
+          <button
+            className="icon-btn"
+            onClick={onClose}
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <form
+          className="auth-form"
+          onSubmit={submit}
+        >
+          <label>
+            Cosa vuoi raggiungere?
+            <input
+              value={title}
+              onChange={(e) =>
+                setTitle(e.target.value)
+              }
+              placeholder="Es. Allenarmi 3 volte a settimana"
+              required
+            />
+          </label>
+
+          <label>
+            Categoria
+            <select
+              value={category}
+              onChange={(e) =>
+                setCategory(e.target.value)
+              }
+            >
+              <option>Personale</option>
+              <option>Fitness</option>
+              <option>Salute</option>
+              <option>Studio</option>
+              <option>Lavoro</option>
+              <option>Finanze</option>
+              <option>Relazioni</option>
+            </select>
+          </label>
+
+          <label>
+            Durata
+            <select
+              value={duration}
+              onChange={(e) =>
+                setDuration(Number(e.target.value))
+              }
+            >
+              <option value={7}>7 giorni</option>
+              <option value={14}>14 giorni</option>
+              <option value={30}>30 giorni</option>
+              <option value={60}>60 giorni</option>
+              <option value={90}>90 giorni</option>
+            </select>
+          </label>
+
+          <button
+            className="primary-btn auth-submit"
+            disabled={busy}
+            type="submit"
+          >
+            {busy
+              ? "Salvataggio..."
+              : "Crea obiettivo"}
+
+            {!busy && <ArrowRight size={17} />}
+          </button>
         </form>
       </div>
     </div>
-  )
+  );
 }
 
-function ShareModal({ active, onClose }) {
-  const share = async () => {
-    const text = `🔥 ${active.streak} giorni consecutivi con LifePilot\\n🎯 ${active.progress}% del mio obiettivo completato\\n\\nSto costruendo il mio percorso un giorno alla volta.`
-    if (navigator.share) {
-      await navigator.share({ title: 'Il mio percorso LifePilot', text })
-    } else {
-      await navigator.clipboard.writeText(text)
-      alert('Testo copiato. Puoi incollarlo su Instagram, TikTok o WhatsApp.')
-    }
+function BottomNavItem({
+  icon,
+  label,
+  active,
+  onClick,
+}) {
+  return (
+    <button
+      className={
+        active
+          ? "bottom-item active"
+          : "bottom-item"
+      }
+      onClick={onClick}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg
+      width="19"
+      height="19"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path
+        fill="#4285F4"
+        d="M21.35 12.23c0-.78-.07-1.53-.22-2.23H12v4.22h5.24a4.48 4.48 0 0 1-1.94 2.94v2.45h3.14c1.84-1.69 2.91-4.18 2.91-7.38Z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 21.75c2.63 0 4.84-.87 6.45-2.36l-3.14-2.45c-.87.58-1.98.92-3.31.92-2.54 0-4.7-1.72-5.47-4.03H3.28v2.53A9.75 9.75 0 0 0 12 21.75Z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M6.53 13.83A5.86 5.86 0 0 1 6.22 12c0-.64.11-1.26.31-1.83V7.64H3.28A9.75 9.75 0 0 0 2.25 12c0 1.57.38 3.05 1.03 4.36l3.25-2.53Z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 6.14c1.43 0 2.72.49 3.73 1.45l2.79-2.79C16.84 3.21 14.63 2.25 12 2.25a9.75 9.75 0 0 0-8.72 5.39l3.25 2.53C6.3 7.86 8.46 6.14 12 6.14Z"
+      />
+    </svg>
+  );
+}
+
+function getInitial(name) {
+  return String(name || "U")
+    .trim()
+    .charAt(0)
+    .toUpperCase();
+}
+
+function capitalize(value) {
+  const text = String(value || "");
+
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function getAuthError(error) {
+  const message = error?.message || "";
+
+  if (
+    message.toLowerCase().includes("invalid login credentials")
+  ) {
+    return "Email o password non corretti.";
   }
 
-  return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="share-card" onClick={e => e.stopPropagation()}>
-        <button className="close-float" onClick={onClose}><X size={19}/></button>
-        <div className="share-badge">LIFE<span>PILOT</span></div>
-        <div className="share-number">{active.streak}</div>
-        <div className="share-title">giorni di fila</div>
-        <div className="share-progress"><span style={{width:`${active.progress}%`}}/></div>
-        <div className="share-progress-label">{active.progress}% del percorso completato</div>
-        <div className="share-quote">“Non serve fare tutto. Serve continuare.”</div>
-        <button className="primary-btn full" onClick={share}><Share2 size={18}/> Condividi il mio progresso</button>
-      </div>
-    </div>
-  )
+  if (
+    message.toLowerCase().includes("email not confirmed")
+  ) {
+    return "Devi prima confermare il tuo indirizzo email.";
+  }
+
+  if (
+    message.toLowerCase().includes("user already registered")
+  ) {
+    return "Esiste già un account con questa email.";
+  }
+
+  return message || "Si è verificato un errore.";
 }
 
-function categoryColor(category) {
-  return ({ Fitness:'green', Studio:'blue', Finanze:'gold', Produttività:'violet', Lingue:'pink', Lavoro:'indigo' }[category] || 'violet')
-}
-
-createRoot(document.getElementById('root')).render(<App />)
+createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
