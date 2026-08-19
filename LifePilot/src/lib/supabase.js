@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 
-// LifePilot uses exactly one Supabase project. Keep the public URL and
-// publishable key together so a stale/wrong Vercel environment variable
-// cannot silently connect the browser to another project.
+// LifePilot is bound explicitly to its own Supabase project.
+// The legacy anon key is public by design and is supported by every
+// supabase-js v2 client used by this project.
 const url = 'https://rhafdhwixhqxufylavag.supabase.co'
-const anonKey = 'sb_publishable_vUZLRreqEV5FBBN0-y-vww_hvLmloA0'
+const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoYWZkaHdpeGhxeHVmeWxhdmFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwNzExMDgsImV4cCI6MjEwMjY0NzEwOH0.zi9gsBitbVnt3ni8Jgqy0eK77r5QDekIY3HU3wC8TfE'
 
 export const supabaseEnabled = Boolean(url && anonKey)
 
@@ -39,6 +39,5 @@ if (supabase) {
     })
   }
 
-  // Allows the small password-recovery bridge to use the same configured client.
   if (typeof window !== 'undefined') window.__lifepilotSupabase = supabase
 }
