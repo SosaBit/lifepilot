@@ -1,14 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
 
 // LifePilot is permanently bound to its own Supabase project.
-// Use the project's modern publishable key; never read Vercel secrets in the browser.
+// The browser may use only the public publishable key; never expose a secret key.
 const url = 'https://rhafdhwixhqxufylavag.supabase.co'
 const publishableKey = 'sb_publishable_vUZLRreqEV5FBBN0-y-vww_hvLmloA0'
 
 export const supabaseEnabled = Boolean(url && publishableKey)
 
-export const supabase = supabaseEnabled
-  ? createClient(url, publishableKey, {
+let client = null
+
+if (supabaseEnabled) {
+  try {
+    client = createClient(url, publishableKey, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
@@ -16,7 +19,16 @@ export const supabase = supabaseEnabled
         flowType: 'pkce',
       },
     })
-  : null
+  } catch (error) {
+    // Never let a client-side Supabase initialization failure produce a blank page.
+    // App.jsx will render its configuration/error screen instead.
+    console.error('[LifePilot] Supabase initialization failed:', error)
+    client = null
+  }
+}
+
+export const supabase = client
+export const supabaseReady = Boolean(supabase)
 
 if (supabase) {
   const originalSignInWithOAuth = supabase.auth.signInWithOAuth.bind(supabase.auth)
