@@ -2,3 +2,17 @@
 @media(max-width:900px){.auth-layout{grid-template-columns:1fr;gap:25px;padding:25px 0 45px}.auth-intro{display:none}.auth-form-area{width:min(520px,100%);margin:auto}.app-layout{grid-template-columns:1fr}.sidebar{display:none}.mobile-menu{display:grid}.topbar{padding:0 14px}.main-content{padding:22px 14px}.dashboard-grid{grid-template-columns:1fr}.quick-grid{grid-template-columns:1fr 1fr}.top-logout{display:none}.page-header{flex-direction:column}.page h1{font-size:32px}.stats{grid-template-columns:1fr}.settings-panel,.logout-panel{flex-direction:column}.settings-heading{min-width:0}.theme-grid{width:100%}.profile-panel{flex-direction:column}.profile-info{grid-template-columns:1fr;width:100%}}
 @media(max-width:560px){.auth-topbar{width:calc(100% - 28px);padding:16px 0}.auth-switch{font-size:12px}.auth-card,.profile-card,.card{padding:22px;border-radius:18px}.quick-grid{grid-template-columns:1fr}.goal-card{align-items:flex-start}.goal-side{margin-left:auto;flex-direction:column;align-items:flex-end;gap:7px}.theme-grid{grid-template-columns:1fr 1fr}.today-badge{display:none}.main-content{padding:18px 12px}.page-header{margin-bottom:20px}.hero-empty{align-items:flex-start;flex-direction:column}.modal-actions{flex-direction:column-reverse}.modal-actions button{width:100%}.rank-row{padding:12px}.rank-name{min-width:0}.rank-name strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.profile-info{grid-template-columns:1fr}}
 #lifepilot-build-marker{position:fixed;right:8px;bottom:8px;z-index:9999;padding:4px 7px;border-radius:6px;background:#111827;color:#fff;font:700 9px/1 ui-monospace,monospace;opacity:.85;pointer-events:none}
+
+/* UI icon normalization */
+.nav-item{min-width:0}
+.nav-item>span{width:36px;height:36px;min-width:36px;display:grid;place-items:center;flex:0 0 36px;border-radius:10px;line-height:0}
+.nav-item>span svg{width:19px;height:19px;display:block;flex:0 0 19px}
+.nav-item.active>span{background:var(--primary-soft)}
+.top-logout{width:38px;min-width:38px;padding:0;justify-content:center;gap:0}
+.top-logout span{display:none}
+.top-logout svg{width:18px;height:18px;display:block;flex:0 0 18px}
+.logout-btn,.logout-large{min-width:0}
+.logout-btn svg,.logout-large svg{width:18px;height:18px;display:block;flex:0 0 18px}
+.settings-heading>svg,.logout-panel>svg{width:22px;height:22px;display:block;flex:0 0 22px}
+@media(max-width:900px){.topbar{min-height:64px;height:64px}.topbar .brand{min-width:0}.topbar .brand-mark{width:32px;height:32px;flex-basis:32px}.user-mini{width:36px;height:36px;flex:0 0 36px}.mobile-menu{width:40px;height:40px;display:grid;place-items:center;flex:0 0 40px}.nav-item{height:48px}.nav-item>span{width:38px;height:38px;min-width:38px;flex-basis:38px}.main-content{overflow-x:hidden}}
+@media(max-width:380px){.topbar{padding:0 10px}.topbar .brand{font-size:17px}.topbar-actions{gap:6px}.main-content{padding-left:10px;padding-right:10px}.panel{padding:18px}.page h1{font-size:29px}}
