@@ -10,9 +10,14 @@
   <body>
     <div id="root"></div>
     <script>
-      try { Object.keys(localStorage).filter(k => k.startsWith('sb-')).forEach(k => localStorage.removeItem(k)); } catch (_) {}
+      try {
+        if (!localStorage.getItem('lifepilot-auth-migration-v1')) {
+          Object.keys(localStorage).filter(k => k.startsWith('sb-')).forEach(k => localStorage.removeItem(k));
+          localStorage.setItem('lifepilot-auth-migration-v1', '1');
+        }
+      } catch (_) {}
     </script>
-    <script type="module" src="/src/main.jsx?v=20260819-1812"></script>
-    <script type="module" src="/src/password-recovery-enhancer.js?v=20260819-1812"></script>
+    <script type="module" src="/src/main.jsx?v=20260819-1815"></script>
+    <script type="module" src="/src/password-recovery-enhancer.js?v=20260819-1815"></script>
   </body>
 </html>
