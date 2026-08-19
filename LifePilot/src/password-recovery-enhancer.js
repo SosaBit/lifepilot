@@ -1,4 +1,4 @@
-const supabase = window.__lifepilotSupabase;
+function getSupabase() { return window.__lifepilotSupabase; }
 
 function addRecoveryButton() {
   if (window.location.pathname === "/reset-password") return;
@@ -14,6 +14,7 @@ function addRecoveryButton() {
 }
 
 async function recoveryPage() {
+  const supabase = getSupabase();
   if (!supabase || window.location.pathname !== "/reset-password") return;
   const root = document.getElementById("root");
   if (!root) return;
@@ -25,7 +26,8 @@ async function recoveryPage() {
   const pass = document.getElementById("recovery-password");
   const confirm = document.getElementById("recovery-confirm");
   const message = document.getElementById("recovery-message");
-  if (hasRecoverySession) { email.parentElement.style.display = "none"; } else { document.querySelectorAll(".new-password").forEach(x => x.style.display = "none"); }
+  if (hasRecoverySession) email.parentElement.style.display = "none";
+  else document.querySelectorAll(".new-password").forEach(x => x.style.display = "none");
   form.onsubmit = async (event) => {
     event.preventDefault(); message.textContent = "";
     try {
@@ -46,5 +48,8 @@ async function recoveryPage() {
   document.getElementById("recovery-back").onclick = () => { window.location.href = "/"; };
 }
 
-if (window.location.pathname === "/reset-password") recoveryPage();
-else new MutationObserver(addRecoveryButton).observe(document.documentElement, { childList: true, subtree: true });
+if (window.location.pathname === "/reset-password") {
+  const timer = setInterval(() => { if (getSupabase()) { clearInterval(timer); recoveryPage(); } }, 50);
+} else {
+  new MutationObserver(addRecoveryButton).observe(document.documentElement, { childList: true, subtree: true });
+}
