@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 const recoveryImport = 'import { ForgotPasswordPanel, PasswordRecovery } from "./password-recovery.jsx";\n'
+const quickActionsImport = 'import { QuickActions } from "./quick-actions.jsx";\n'
 
 const appReplacement = `function App(){
   const [session,setSession]=useState(null);const [loading,setLoading]=useState(true);
@@ -12,7 +13,7 @@ const appReplacement = `function App(){
     return()=>{mounted=false;subscription.unsubscribe()};
   },[]);
   if(window.location.pathname==="/reset-password") return <PasswordRecovery/>;
-  if(loading)return <LoadingScreen/>;if(!supabaseEnabled||!supabase)return <ConfigurationScreen/>;if(!session)return <AuthScreen/>;return <AuthenticatedApp session={session}/>;
+  if(loading)return <LoadingScreen/>;if(!supabaseEnabled||!supabase)return <ConfigurationScreen/>;if(!session)return <AuthScreen/>;return <><AuthenticatedApp session={session}/><QuickActions/></>;
 }`
 
 const authReplacement = `function AuthScreen(){
@@ -36,6 +37,7 @@ export default defineConfig({
         if (!id.endsWith('/src/main.jsx')) return
         let next = code
         if (!next.includes('from "./password-recovery.jsx"')) next = recoveryImport + next
+        if (!next.includes('from "./quick-actions.jsx"')) next = quickActionsImport + next
         if (!next.includes('import { createRoot } from "react-dom/client"')) next = 'import { createRoot } from "react-dom/client";\n' + next
         next = next.replace(/function App\(\)\{[\s\S]*?\}\nfunction LoadingScreen/, `${appReplacement}\nfunction LoadingScreen`)
         next = next.replace(/function AuthScreen\(\)\{[\s\S]*?\}\nfunction AuthBenefit/, `${authReplacement}\nfunction AuthBenefit`)
