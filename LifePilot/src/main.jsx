@@ -164,13 +164,11 @@ function AuthScreen() {
     setMessage("");
 
     try {
-      const redirectTo = `${window.location.origin}/`;
-
       const { error: googleError } =
         await supabase.auth.signInWithOAuth({
           provider: "google",
           options: {
-            redirectTo,
+            redirectTo: window.location.origin,
           },
         });
 
@@ -180,145 +178,294 @@ function AuthScreen() {
         err?.message ||
           "Impossibile avviare l'accesso con Google."
       );
+
       setBusy(false);
     }
   }
 
+  function switchMode(nextMode) {
+    setMode(nextMode);
+    setError("");
+    setMessage("");
+  }
+
   return (
     <div className="auth-page">
-      <div className="auth-background">
-        <div className="auth-orb orb-one" />
-        <div className="auth-orb orb-two" />
-      </div>
-
-      <main className="auth-card">
-        <div className="auth-brand">
-          <div className="brand-mark">
-            <Sparkles size={19} />
-          </div>
+      <div className="auth-topbar">
+        <button className="brand" type="button">
+          <span className="brand-mark">
+            <Sparkles size={17} />
+          </span>
           <span>LifePilot</span>
-        </div>
-
-        <div className="auth-heading">
-          <span className="eyebrow">IL TUO PERCORSO</span>
-
-          <h1>
-            {mode === "login"
-              ? "Bentornato."
-              : "Inizia il tuo percorso."}
-          </h1>
-
-          <p>
-            {mode === "login"
-              ? "Accedi per continuare da dove avevi lasciato."
-              : "Crea il tuo account e trasforma i tuoi obiettivi in azioni quotidiane."}
-          </p>
-        </div>
-
-        <button
-          className="google-btn"
-          onClick={handleGoogle}
-          disabled={busy}
-          type="button"
-        >
-          <GoogleIcon />
-          Continua con Google
         </button>
 
-        <div className="auth-divider">
-          <span>oppure</span>
+        <div className="auth-topbar-right">
+          {mode === "login" ? (
+            <>
+              <span>Non hai un account?</span>
+              <button
+                type="button"
+                onClick={() => switchMode("signup")}
+              >
+                Registrati
+              </button>
+            </>
+          ) : (
+            <>
+              <span>Hai già un account?</span>
+              <button
+                type="button"
+                onClick={() => switchMode("login")}
+              >
+                Accedi
+              </button>
+            </>
+          )}
         </div>
+      </div>
 
-        <form onSubmit={handleEmailAuth} className="auth-form">
-          {mode === "signup" && (
-            <label>
-              Nome
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Il tuo nome"
-                autoComplete="name"
-              />
-            </label>
-          )}
-
-          <label>
-            Email
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="nome@email.com"
-              autoComplete="email"
-              required
-            />
-          </label>
-
-          <label>
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Almeno 6 caratteri"
-              minLength={6}
-              autoComplete={
-                mode === "login"
-                  ? "current-password"
-                  : "new-password"
-              }
-              required
-            />
-          </label>
-
-          {error && (
-            <div className="auth-message error">
-              {error}
+      <main className="auth-layout">
+        <section className="auth-intro">
+          <div className="auth-intro-content">
+            <div className="auth-eyebrow">
+              IL TUO SPAZIO PERSONALE
             </div>
-          )}
 
-          {message && (
-            <div className="auth-message success">
-              {message}
+            <h1>
+              La tua vita.
+              <br />
+              <span>Un passo alla volta.</span>
+            </h1>
+
+            <p>
+              LifePilot ti aiuta a trasformare ciò che vuoi
+              ottenere in obiettivi concreti, abitudini e
+              progressi misurabili.
+            </p>
+
+            <div className="auth-benefits">
+              <div>
+                <span className="benefit-icon">
+                  <Target size={17} />
+                </span>
+
+                <div>
+                  <strong>Obiettivi chiari</strong>
+                  <small>
+                    Dai una direzione a ciò che vuoi
+                    raggiungere.
+                  </small>
+                </div>
+              </div>
+
+              <div>
+                <span className="benefit-icon">
+                  <Flame size={17} />
+                </span>
+
+                <div>
+                  <strong>Costanza quotidiana</strong>
+                  <small>
+                    Costruisci il tuo percorso giorno dopo
+                    giorno.
+                  </small>
+                </div>
+              </div>
+
+              <div>
+                <span className="benefit-icon">
+                  <BarChart3 size={17} />
+                </span>
+
+                <div>
+                  <strong>Progressi reali</strong>
+                  <small>
+                    Tieni sotto controllo quanto stai
+                    avanzando.
+                  </small>
+                </div>
+              </div>
             </div>
-          )}
+          </div>
+        </section>
 
-          <button
-            className="primary-btn auth-submit"
-            disabled={busy}
-            type="submit"
-          >
-            {busy
-              ? "Attendi..."
-              : mode === "login"
-              ? "Accedi"
-              : "Crea account"}
+        <section className="auth-form-area">
+          <div className="auth-card">
+            <div className="auth-card-heading">
+              <div className="auth-card-icon">
+                {mode === "login" ? (
+                  <Sparkles size={20} />
+                ) : (
+                  <Target size={20} />
+                )}
+              </div>
 
-            {!busy && <ArrowRight size={17} />}
-          </button>
-        </form>
+              <div>
+                <span className="eyebrow">
+                  {mode === "login"
+                    ? "BENTORNATO"
+                    : "INIZIAMO"}
+                </span>
 
-        <div className="auth-switch">
-          <span>
-            {mode === "login"
-              ? "Non hai ancora un account?"
-              : "Hai già un account?"}
-          </span>
+                <h2>
+                  {mode === "login"
+                    ? "Accedi a LifePilot"
+                    : "Crea il tuo account"}
+                </h2>
+              </div>
+            </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              setMode(mode === "login" ? "signup" : "login");
-              setError("");
-              setMessage("");
-            }}
-          >
-            {mode === "login"
-              ? "Registrati"
-              : "Accedi"}
-          </button>
-        </div>
+            <p className="auth-card-description">
+              {mode === "login"
+                ? "Riprendi il tuo percorso esattamente da dove lo avevi lasciato."
+                : "Crea il tuo spazio personale e inizia a costruire il tuo percorso."}
+            </p>
+
+            <button
+              className="google-btn"
+              onClick={handleGoogle}
+              disabled={busy}
+              type="button"
+            >
+              <GoogleIcon />
+              <span>
+                {busy
+                  ? "Attendi..."
+                  : "Continua con Google"}
+              </span>
+            </button>
+
+            <div className="auth-divider">
+              <span>oppure continua con email</span>
+            </div>
+
+            <form
+              onSubmit={handleEmailAuth}
+              className="auth-form"
+            >
+              {mode === "signup" && (
+                <label>
+                  Nome
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) =>
+                      setName(e.target.value)
+                    }
+                    placeholder="Come vuoi essere chiamato?"
+                    autoComplete="name"
+                    required
+                  />
+                </label>
+              )}
+
+              <label>
+                Email
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) =>
+                    setEmail(e.target.value)
+                  }
+                  placeholder="nome@email.com"
+                  autoComplete="email"
+                  required
+                />
+              </label>
+
+              <label>
+                Password
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) =>
+                    setPassword(e.target.value)
+                  }
+                  placeholder="Almeno 6 caratteri"
+                  minLength={6}
+                  autoComplete={
+                    mode === "login"
+                      ? "current-password"
+                      : "new-password"
+                  }
+                  required
+                />
+              </label>
+
+              {mode === "login" && (
+                <div className="auth-extra-row">
+                  <span>Accesso sicuro con Supabase</span>
+                </div>
+              )}
+
+              {error && (
+                <div className="auth-message error">
+                  {error}
+                </div>
+              )}
+
+              {message && (
+                <div className="auth-message success">
+                  {message}
+                </div>
+              )}
+
+              <button
+                className="primary-btn auth-submit"
+                disabled={busy}
+                type="submit"
+              >
+                {busy
+                  ? "Attendi..."
+                  : mode === "login"
+                  ? "Accedi a LifePilot"
+                  : "Crea account"}
+
+                {!busy && <ArrowRight size={17} />}
+              </button>
+            </form>
+
+            <div className="auth-mobile-switch">
+              {mode === "login" ? (
+                <>
+                  <span>
+                    Non hai ancora un account?
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      switchMode("signup")
+                    }
+                  >
+                    Registrati
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span>Hai già un account?</span>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      switchMode("login")
+                    }
+                  >
+                    Accedi
+                  </button>
+                </>
+              )}
+            </div>
+
+            <div className="auth-security">
+              <Check size={14} />
+              <span>
+                I tuoi dati personali rimangono nel tuo
+                account.
+              </span>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   );
