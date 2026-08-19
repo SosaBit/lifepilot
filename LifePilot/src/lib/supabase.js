@@ -14,3 +14,23 @@ export const supabase = supabaseEnabled
       },
     })
   : null
+
+// Keep OAuth callbacks on the site that actually launched the login.
+// This prevents stale Vercel deployment URLs from breaking Google sign-in.
+if (supabase) {
+  const originalSignInWithOAuth = supabase.auth.signInWithOAuth.bind(supabase.auth)
+
+  supabase.auth.signInWithOAuth = (credentials = {}) => {
+    const options = credentials.options ?? {}
+    const redirectTo =
+      typeof window !== 'undefined' ? window.location.origin : options.redirectTo
+
+    return originalSignInWithOAuth({
+      ...credentials,
+      options: {
+        ...options,
+        ...(redirectTo ? { redirectTo } : {}),
+      },
+    })
+  }
+}
