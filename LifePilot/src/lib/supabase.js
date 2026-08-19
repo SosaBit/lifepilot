@@ -25,10 +25,12 @@ export const supabase = client
 export const supabaseEnabled = Boolean(client)
 export const supabaseReady = Boolean(client)
 
-// Keep Google account selection explicit and always return to the current LifePilot origin.
 if (supabase) {
   const originalSignInWithOAuth = supabase.auth.signInWithOAuth.bind(supabase.auth)
+  const originalSignUp = supabase.auth.signUp.bind(supabase.auth)
 
+  // Always keep OAuth inside the current LifePilot deployment and preserve
+  // the explicit account selector for Google.
   supabase.auth.signInWithOAuth = (credentials = {}) => {
     const options = credentials.options ?? {}
     const redirectTo =
@@ -45,6 +47,25 @@ if (supabase) {
           ...(options.queryParams || {}),
           prompt: 'select_account',
         },
+      },
+    })
+  }
+
+  // Email confirmation must return to LifePilot as well. This is especially
+  // important for PKCE on Android browsers, where the original page can be
+  // discarded before the confirmation link is opened.
+  supabase.auth.signUp = (credentials = {}) => {
+    const options = credentials.options ?? {}
+    const emailRedirectTo =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}/callback`
+        : options.emailRedirectTo
+
+    return originalSignUp({
+      ...credentials,
+      options: {
+        ...options,
+        ...(emailRedirectTo ? { emailRedirectTo } : {}),
       },
     })
   }
