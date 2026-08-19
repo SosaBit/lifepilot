@@ -3,22 +3,28 @@ import { createRoot } from "react-dom/client";
 import {
   ArrowRight,
   BarChart3,
+  CalendarDays,
   Check,
   ChevronRight,
   Flame,
   LogOut,
   Menu,
-  MessageCircle,
   Plus,
   Settings,
   Sparkles,
   Target,
+  Trash2,
   Trophy,
   User,
   X,
 } from "lucide-react";
+
 import { supabase, supabaseEnabled } from "./lib/supabase";
 import "./styles.css";
+
+/* =========================================================
+   APP
+   ========================================================= */
 
 function App() {
   const [session, setSession] = useState(null);
@@ -61,81 +67,114 @@ function App() {
     return <LoadingScreen />;
   }
 
-  if (!supabaseEnabled) {
-    return (
-      <div className="auth-page">
-        <div className="auth-card">
-          <div className="brand large">
-            <span className="brand-mark">
-              <Sparkles size={18} />
-            </span>
-            <span>LifePilot</span>
-          </div>
-
-          <h1>Configurazione incompleta</h1>
-
-          <p>
-            LifePilot non riesce a collegarsi a Supabase.
-            Controlla le variabili Vercel.
-          </p>
-        </div>
-      </div>
-    );
+  if (!supabaseEnabled || !supabase) {
+    return <ConfigurationScreen />;
   }
 
   if (!session) {
     return <AuthScreen />;
   }
 
-  return <Dashboard session={session} />;
+  return <AuthenticatedApp session={session} />;
 }
+
+/* =========================================================
+   LOADING
+   ========================================================= */
 
 function LoadingScreen() {
   return (
     <div className="loading-screen">
       <div className="loading-logo">
-        <Sparkles size={22} />
+        <Sparkles size={23} />
       </div>
+
       <strong>LifePilot</strong>
       <span>Caricamento...</span>
     </div>
   );
 }
 
+/* =========================================================
+   CONFIGURATION
+   ========================================================= */
+
+function ConfigurationScreen() {
+  return (
+    <div className="auth-page">
+      <div className="auth-card configuration-card">
+        <div className="brand large">
+          <span className="brand-mark">
+            <Sparkles size={18} />
+          </span>
+
+          <span>LifePilot</span>
+        </div>
+
+        <div className="eyebrow">CONFIGURAZIONE</div>
+
+        <h1>Connessione non disponibile</h1>
+
+        <p>
+          LifePilot non riesce a collegarsi a Supabase.
+          Controlla le variabili di ambiente del progetto Vercel.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   AUTH
+   ========================================================= */
+
 function AuthScreen() {
   const [mode, setMode] = useState("login");
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  async function handleEmailAuth(e) {
-    e.preventDefault();
-
-    setBusy(true);
+  function resetMessages() {
     setError("");
     setMessage("");
+  }
+
+  function switchMode(nextMode) {
+    setMode(nextMode);
+    resetMessages();
+  }
+
+  async function handleEmailAuth(event) {
+    event.preventDefault();
+
+    setBusy(true);
+    resetMessages();
 
     try {
-      if (mode === "signup") {
-        if (!name.trim()) {
-          throw new Error("Inserisci il tuo nome.");
-        }
+      if (!email.trim()) {
+        throw new Error("Inserisci la tua email.");
+      }
 
+      if (password.length < 6) {
+        throw new Error(
+          "La password deve contenere almeno 6 caratteri."
+        );
+      }
+
+      if (mode === "signup") {
         const { data, error: signUpError } =
           await supabase.auth.signUp({
             email: email.trim(),
             password,
-            options: {
-              data: {
-                full_name: name.trim(),
-              },
-            },
           });
 
-        if (signUpError) throw signUpError;
+        if (signUpError) {
+          throw signUpError;
+        }
 
         if (!data.session) {
           setMessage(
@@ -149,7 +188,9 @@ function AuthScreen() {
             password,
           });
 
-        if (signInError) throw signInError;
+        if (signInError) {
+          throw signInError;
+        }
       }
     } catch (err) {
       setError(getAuthError(err));
@@ -160,19 +201,23 @@ function AuthScreen() {
 
   async function handleGoogle() {
     setBusy(true);
-    setError("");
-    setMessage("");
+    resetMessages();
 
     try {
+      const redirectUrl =
+        "https://lifepilot-26vdyare5-brandecho2k25-8479s-projects.vercel.app";
+
       const { error: googleError } =
         await supabase.auth.signInWithOAuth({
           provider: "google",
           options: {
-            redirectTo: "https://lifepilot-26vdyare5-brandecho2k25-8479s-projects.vercel.app"
+            redirectTo: redirectUrl,
           },
         });
 
-      if (googleError) throw googleError;
+      if (googleError) {
+        throw googleError;
+      }
     } catch (err) {
       setError(
         err?.message ||
@@ -183,19 +228,21 @@ function AuthScreen() {
     }
   }
 
-  function switchMode(nextMode) {
-    setMode(nextMode);
-    setError("");
-    setMessage("");
-  }
-
   return (
     <div className="auth-page">
-      <div className="auth-topbar">
-        <button className="brand" type="button">
+      <div className="auth-background-glow auth-glow-one" />
+      <div className="auth-background-glow auth-glow-two" />
+
+      <header className="auth-topbar">
+        <button
+          className="brand"
+          type="button"
+          onClick={() => switchMode("login")}
+        >
           <span className="brand-mark">
             <Sparkles size={17} />
           </span>
+
           <span>LifePilot</span>
         </button>
 
@@ -203,6 +250,7 @@ function AuthScreen() {
           {mode === "login" ? (
             <>
               <span>Non hai un account?</span>
+
               <button
                 type="button"
                 onClick={() => switchMode("signup")}
@@ -213,6 +261,7 @@ function AuthScreen() {
           ) : (
             <>
               <span>Hai già un account?</span>
+
               <button
                 type="button"
                 onClick={() => switchMode("login")}
@@ -222,7 +271,7 @@ function AuthScreen() {
             </>
           )}
         </div>
-      </div>
+      </header>
 
       <main className="auth-layout">
         <section className="auth-intro">
@@ -244,47 +293,23 @@ function AuthScreen() {
             </p>
 
             <div className="auth-benefits">
-              <div>
-                <span className="benefit-icon">
-                  <Target size={17} />
-                </span>
+              <AuthBenefit
+                icon={<Target size={17} />}
+                title="Obiettivi chiari"
+                text="Dai una direzione a ciò che vuoi raggiungere."
+              />
 
-                <div>
-                  <strong>Obiettivi chiari</strong>
-                  <small>
-                    Dai una direzione a ciò che vuoi
-                    raggiungere.
-                  </small>
-                </div>
-              </div>
+              <AuthBenefit
+                icon={<Flame size={17} />}
+                title="Costanza quotidiana"
+                text="Costruisci il tuo percorso giorno dopo giorno."
+              />
 
-              <div>
-                <span className="benefit-icon">
-                  <Flame size={17} />
-                </span>
-
-                <div>
-                  <strong>Costanza quotidiana</strong>
-                  <small>
-                    Costruisci il tuo percorso giorno dopo
-                    giorno.
-                  </small>
-                </div>
-              </div>
-
-              <div>
-                <span className="benefit-icon">
-                  <BarChart3 size={17} />
-                </span>
-
-                <div>
-                  <strong>Progressi reali</strong>
-                  <small>
-                    Tieni sotto controllo quanto stai
-                    avanzando.
-                  </small>
-                </div>
-              </div>
+              <AuthBenefit
+                icon={<BarChart3 size={17} />}
+                title="Progressi reali"
+                text="Tieni sotto controllo quanto stai avanzando."
+              />
             </div>
           </div>
         </section>
@@ -328,6 +353,7 @@ function AuthScreen() {
               type="button"
             >
               <GoogleIcon />
+
               <span>
                 {busy
                   ? "Attendi..."
@@ -343,29 +369,14 @@ function AuthScreen() {
               onSubmit={handleEmailAuth}
               className="auth-form"
             >
-              {mode === "signup" && (
-                <label>
-                  Nome
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) =>
-                      setName(e.target.value)
-                    }
-                    placeholder="Come vuoi essere chiamato?"
-                    autoComplete="name"
-                    required
-                  />
-                </label>
-              )}
-
               <label>
                 Email
+
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) =>
-                    setEmail(e.target.value)
+                  onChange={(event) =>
+                    setEmail(event.target.value)
                   }
                   placeholder="nome@email.com"
                   autoComplete="email"
@@ -375,11 +386,12 @@ function AuthScreen() {
 
               <label>
                 Password
+
                 <input
                   type="password"
                   value={password}
-                  onChange={(e) =>
-                    setPassword(e.target.value)
+                  onChange={(event) =>
+                    setPassword(event.target.value)
                   }
                   placeholder="Almeno 6 caratteri"
                   minLength={6}
@@ -391,12 +403,6 @@ function AuthScreen() {
                   required
                 />
               </label>
-
-              {mode === "login" && (
-                <div className="auth-extra-row">
-                  <span>Accesso sicuro con Supabase</span>
-                </div>
-              )}
 
               {error && (
                 <div className="auth-message error">
@@ -428,9 +434,7 @@ function AuthScreen() {
             <div className="auth-mobile-switch">
               {mode === "login" ? (
                 <>
-                  <span>
-                    Non hai ancora un account?
-                  </span>
+                  <span>Non hai ancora un account?</span>
 
                   <button
                     type="button"
@@ -459,9 +463,10 @@ function AuthScreen() {
 
             <div className="auth-security">
               <Check size={14} />
+
               <span>
-                I tuoi dati personali rimangono nel tuo
-                account.
+                Il tuo spazio personale rimane collegato
+                esclusivamente al tuo account.
               </span>
             </div>
           </div>
@@ -471,20 +476,275 @@ function AuthScreen() {
   );
 }
 
-function Dashboard({ session }) {
+function AuthBenefit({ icon, title, text }) {
+  return (
+    <div className="auth-benefit">
+      <span className="benefit-icon">{icon}</span>
+
+      <div>
+        <strong>{title}</strong>
+        <small>{text}</small>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   AUTHENTICATED APP
+   ========================================================= */
+
+function AuthenticatedApp({ session }) {
+  const [profile, setProfile] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadProfile() {
+      setLoadingProfile(true);
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, nickname, birth_date")
+        .eq("id", session.user.id)
+        .maybeSingle();
+
+      if (!mounted) return;
+
+      if (error) {
+        console.error(
+          "Errore caricamento profilo:",
+          error
+        );
+
+        setProfile(null);
+      } else {
+        setProfile(data || null);
+      }
+
+      setLoadingProfile(false);
+    }
+
+    loadProfile();
+
+    return () => {
+      mounted = false;
+    };
+  }, [session.user.id]);
+
+  if (loadingProfile) {
+    return <LoadingScreen />;
+  }
+
+  if (!profile) {
+    return (
+      <ProfileSetup
+        user={session.user}
+        onComplete={setProfile}
+      />
+    );
+  }
+
+  return (
+    <Dashboard
+      session={session}
+      profile={profile}
+    />
+  );
+}
+
+/* =========================================================
+   PROFILE SETUP
+   ========================================================= */
+
+function ProfileSetup({ user, onComplete }) {
+  const [nickname, setNickname] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function saveProfile(event) {
+    event.preventDefault();
+
+    const cleanNickname = nickname.trim();
+
+    if (!cleanNickname) {
+      setError(
+        "Scegli il nickname che vuoi usare su LifePilot."
+      );
+      return;
+    }
+
+    if (cleanNickname.length < 2) {
+      setError(
+        "Il nickname deve contenere almeno 2 caratteri."
+      );
+      return;
+    }
+
+    if (!birthDate) {
+      setError("Inserisci la tua data di nascita.");
+      return;
+    }
+
+    setBusy(true);
+    setError("");
+
+    try {
+      const { data, error: profileError } =
+        await supabase
+          .from("profiles")
+          .upsert(
+            {
+              id: user.id,
+              nickname: cleanNickname,
+              birth_date: birthDate,
+            },
+            {
+              onConflict: "id",
+            }
+          )
+          .select("id, nickname, birth_date")
+          .single();
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      onComplete(data);
+    } catch (err) {
+      console.error(err);
+
+      setError(
+        "Non è stato possibile salvare il profilo. Riprova."
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="profile-setup-page">
+      <div className="auth-background-glow auth-glow-one" />
+
+      <div className="profile-setup-card">
+        <div className="profile-setup-icon">
+          <Sparkles size={22} />
+        </div>
+
+        <div className="eyebrow">
+          BENVENUTO IN LIFEPILOT
+        </div>
+
+        <h1>Prima conosciamo te.</h1>
+
+        <p className="profile-setup-description">
+          Scegli come vuoi essere chiamato e inserisci la
+          tua data di nascita. Da questo momento LifePilot
+          sarà il tuo spazio personale.
+        </p>
+
+        <form
+          className="profile-setup-form"
+          onSubmit={saveProfile}
+        >
+          <label>
+            Il tuo nickname
+
+            <input
+              type="text"
+              value={nickname}
+              onChange={(event) =>
+                setNickname(event.target.value)
+              }
+              placeholder="Es. Marco, Alex, Miki..."
+              maxLength={30}
+              autoComplete="nickname"
+              autoFocus
+              required
+            />
+          </label>
+
+          <label>
+            Data di nascita
+
+            <input
+              type="date"
+              value={birthDate}
+              onChange={(event) =>
+                setBirthDate(event.target.value)
+              }
+              required
+            />
+          </label>
+
+          {error && (
+            <div className="auth-message error">
+              {error}
+            </div>
+          )}
+
+          <button
+            className="primary-btn profile-setup-submit"
+            type="submit"
+            disabled={busy}
+          >
+            {busy
+              ? "Salvataggio..."
+              : "Entra in LifePilot"}
+
+            {!busy && <ArrowRight size={17} />}
+          </button>
+        </form>
+
+        <div className="profile-setup-note">
+          <Check size={14} />
+
+          <span>
+            Il nickname è indipendente dal nome del tuo
+            account Google.
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   DASHBOARD
+   ========================================================= */
+
+function Dashboard({ session, profile }) {
   const [view, setView] = useState("home");
   const [mobileOpen, setMobileOpen] = useState(false);
+
   const [goals, setGoals] = useState([]);
   const [loadingGoals, setLoadingGoals] = useState(true);
+
   const [createOpen, setCreateOpen] = useState(false);
 
   const user = session.user;
+  const userName = profile.nickname;
 
-  const userName =
-    user.user_metadata?.full_name ||
-    user.user_metadata?.name ||
-    user.email?.split("@")[0] ||
-    "utente";
+  const [today, setToday] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setToday(new Date());
+    }, 60000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const formattedToday = useMemo(() => {
+    return new Intl.DateTimeFormat("it-IT", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(today);
+  }, [today]);
 
   const activeGoal = useMemo(
     () => goals[0] || null,
@@ -506,7 +766,10 @@ function Dashboard({ session }) {
         ascending: false,
       });
 
-    if (!error) {
+    if (error) {
+      console.error("Errore caricamento obiettivi:", error);
+      setGoals([]);
+    } else {
       setGoals(data || []);
     }
 
@@ -514,11 +777,15 @@ function Dashboard({ session }) {
   }
 
   async function createGoal(goal) {
+    const title = goal.title.trim();
+
+    if (!title) return;
+
     const { data, error } = await supabase
       .from("goals")
       .insert({
         user_id: user.id,
-        title: goal.title,
+        title,
         category: goal.category,
         duration_days: Number(goal.duration_days),
         progress: 0,
@@ -527,14 +794,19 @@ function Dashboard({ session }) {
       .select()
       .single();
 
-    if (!error && data) {
+    if (error) {
+      console.error(error);
+
+      alert(
+        "Non è stato possibile creare l'obiettivo."
+      );
+
+      return;
+    }
+
+    if (data) {
       setGoals((current) => [data, ...current]);
       setCreateOpen(false);
-    } else {
-      alert(
-        error?.message ||
-          "Non è stato possibile creare l'obiettivo."
-      );
     }
   }
 
@@ -551,11 +823,17 @@ function Dashboard({ session }) {
       .eq("id", id)
       .eq("user_id", user.id);
 
-    if (!error) {
-      setGoals((current) =>
-        current.filter((goal) => goal.id !== id)
+    if (error) {
+      alert(
+        "Non è stato possibile eliminare l'obiettivo."
       );
+
+      return;
     }
+
+    setGoals((current) =>
+      current.filter((goal) => goal.id !== id)
+    );
   }
 
   async function logout() {
@@ -569,6 +847,11 @@ function Dashboard({ session }) {
     setView("home");
   }
 
+  function navigate(nextView) {
+    setView(nextView);
+    setMobileOpen(false);
+  }
+
   return (
     <div className="app">
       <header className="topbar">
@@ -576,13 +859,16 @@ function Dashboard({ session }) {
           <button
             className="mobile-menu"
             onClick={() => setMobileOpen(true)}
+            type="button"
+            aria-label="Apri menu"
           >
             <Menu size={22} />
           </button>
 
           <button
             className="brand"
-            onClick={() => setView("home")}
+            onClick={() => navigate("home")}
+            type="button"
           >
             <span className="brand-mark">
               <Sparkles size={17} />
@@ -592,9 +878,14 @@ function Dashboard({ session }) {
           </button>
 
           <div className="topbar-actions">
-            <div className="user-mini">
+            <button
+              className="user-mini"
+              onClick={() => navigate("profile")}
+              type="button"
+              title="Profilo"
+            >
               {getInitial(userName)}
-            </div>
+            </button>
           </div>
         </div>
       </header>
@@ -606,61 +897,60 @@ function Dashboard({ session }) {
         >
           <aside
             className="mobile-drawer"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(event) =>
+              event.stopPropagation()
+            }
           >
             <div className="drawer-head">
               <div className="brand">
                 <span className="brand-mark">
                   <Sparkles size={17} />
                 </span>
+
                 <span>LifePilot</span>
               </div>
 
               <button
                 className="icon-btn"
                 onClick={() => setMobileOpen(false)}
+                type="button"
               >
                 <X size={20} />
               </button>
             </div>
 
-            <Nav
+            <DashboardNav
               view={view}
-              setView={(next) => {
-                setView(next);
-                setMobileOpen(false);
-              }}
+              onNavigate={navigate}
             />
+
+            <button
+              className="logout-large"
+              onClick={logout}
+              type="button"
+            >
+              <LogOut size={17} />
+              <span>Esci</span>
+            </button>
           </aside>
         </div>
       )}
 
-      <div className="page-shell">
+      <div className="app-layout">
         <aside className="sidebar">
-          <div className="sidebar-section">
-            <div className="eyebrow">IL MIO SPAZIO</div>
+          <DashboardNav
+            view={view}
+            onNavigate={navigate}
+          />
 
-            <Nav
-              view={view}
-              setView={setView}
-            />
-          </div>
-
-          <div className="account-card">
-            <div className="account-avatar">
-              {getInitial(userName)}
-            </div>
-
-            <strong>{userName}</strong>
-
-            <span>{user.email}</span>
-
+          <div className="sidebar-bottom">
             <button
               className="logout-btn"
               onClick={logout}
+              type="button"
             >
-              <LogOut size={16} />
-              Esci
+              <LogOut size={17} />
+              <span>Esci</span>
             </button>
           </div>
         </aside>
@@ -669,16 +959,17 @@ function Dashboard({ session }) {
           {view === "home" && (
             <Home
               name={userName}
+              today={formattedToday}
               goal={activeGoal}
               goals={goals}
               loading={loadingGoals}
               onCreate={() => setCreateOpen(true)}
-              onDelete={deleteGoal}
+              onViewGoals={() => navigate("goals")}
             />
           )}
 
           {view === "goals" && (
-            <Goals
+            <GoalsView
               goals={goals}
               loading={loadingGoals}
               onCreate={() => setCreateOpen(true)}
@@ -686,60 +977,22 @@ function Dashboard({ session }) {
             />
           )}
 
-          {view === "progress" && (
-            <Progress goals={goals} />
-          )}
-
-          {view === "coach" && (
-            <Coach />
-          )}
-
           {view === "profile" && (
-            <Profile
+            <ProfileView
+              profile={profile}
               user={user}
-              name={userName}
+            />
+          )}
+
+          {view === "settings" && (
+            <SettingsView
+              profile={profile}
+              user={user}
               onLogout={logout}
             />
           )}
         </main>
       </div>
-
-      <nav className="bottom-nav">
-        <BottomNavItem
-          icon={<Target size={20} />}
-          label="Oggi"
-          active={view === "home"}
-          onClick={() => setView("home")}
-        />
-
-        <BottomNavItem
-          icon={<BarChart3 size={20} />}
-          label="Progressi"
-          active={view === "progress"}
-          onClick={() => setView("progress")}
-        />
-
-        <button
-          className="fab"
-          onClick={() => setCreateOpen(true)}
-        >
-          <Plus size={25} />
-        </button>
-
-        <BottomNavItem
-          icon={<MessageCircle size={20} />}
-          label="Coach"
-          active={view === "coach"}
-          onClick={() => setView("coach")}
-        />
-
-        <BottomNavItem
-          icon={<Settings size={20} />}
-          label="Profilo"
-          active={view === "profile"}
-          onClick={() => setView("profile")}
-        />
-      </nav>
 
       {createOpen && (
         <CreateGoalModal
@@ -751,531 +1004,272 @@ function Dashboard({ session }) {
   );
 }
 
-function Nav({ view, setView }) {
+/* =========================================================
+   NAVIGATION
+   ========================================================= */
+
+function DashboardNav({ view, onNavigate }) {
   return (
-    <nav className="nav-list">
-      <button
-        className={
-          view === "home"
-            ? "nav-item active"
-            : "nav-item"
-        }
-        onClick={() => setView("home")}
-      >
-        <Target size={18} />
-        Oggi
-      </button>
+    <nav className="dashboard-nav">
+      <NavItem
+        active={view === "home"}
+        icon={<Sparkles size={18} />}
+        label="Home"
+        onClick={() => onNavigate("home")}
+      />
 
-      <button
-        className={
-          view === "goals"
-            ? "nav-item active"
-            : "nav-item"
-        }
-        onClick={() => setView("goals")}
-      >
-        <Trophy size={18} />
-        I miei obiettivi
-      </button>
+      <NavItem
+        active={view === "goals"}
+        icon={<Target size={18} />}
+        label="Obiettivi"
+        onClick={() => onNavigate("goals")}
+      />
 
-      <button
-        className={
-          view === "coach"
-            ? "nav-item active"
-            : "nav-item"
-        }
-        onClick={() => setView("coach")}
-      >
-        <MessageCircle size={18} />
-        Coach AI
-      </button>
+      <NavItem
+        active={view === "profile"}
+        icon={<User size={18} />}
+        label="Profilo"
+        onClick={() => onNavigate("profile")}
+      />
 
-      <button
-        className={
-          view === "progress"
-            ? "nav-item active"
-            : "nav-item"
-        }
-        onClick={() => setView("progress")}
-      >
-        <BarChart3 size={18} />
-        Progressi
-      </button>
-
-      <button
-        className={
-          view === "profile"
-            ? "nav-item active"
-            : "nav-item"
-        }
-        onClick={() => setView("profile")}
-      >
-        <Settings size={18} />
-        Profilo
-      </button>
+      <NavItem
+        active={view === "settings"}
+        icon={<Settings size={18} />}
+        label="Impostazioni"
+        onClick={() => onNavigate("settings")}
+      />
     </nav>
   );
 }
 
+function NavItem({
+  active,
+  icon,
+  label,
+  onClick,
+}) {
+  return (
+    <button
+      className={`nav-item ${
+        active ? "active" : ""
+      }`}
+      onClick={onClick}
+      type="button"
+    >
+      <span className="nav-item-icon">{icon}</span>
+      <span>{label}</span>
+    </button>
+  );
+}
+
+/* =========================================================
+   HOME
+   ========================================================= */
+
 function Home({
   name,
+  today,
   goal,
   goals,
   loading,
   onCreate,
-  onDelete,
+  onViewGoals,
 }) {
   return (
-    <div className="stack">
-      <section className="hero-row">
+    <div className="page">
+      <div className="page-header">
         <div>
-          <div className="eyebrow">
-            IL TUO OBIETTIVO
-          </div>
+          <div className="eyebrow">{today}</div>
 
           <h1>
-            Buongiorno, {capitalize(name)}.
+            Buongiorno, <span>{name}</span>
           </h1>
 
           <p>
-            Piccoli passi oggi. Grandi risultati nel tempo.
+            Costruiamo qualcosa di importante, un passo
+            alla volta.
           </p>
         </div>
 
-        <button
-          className="primary-btn"
-          onClick={onCreate}
-        >
-          <Plus size={18} />
-          Nuovo obiettivo
-        </button>
-      </section>
-
-      {loading ? (
-        <div className="panel loading-panel">
-          Caricamento dei tuoi obiettivi...
+        <div className="today-badge">
+          <CalendarDays size={17} />
+          <span>Oggi</span>
         </div>
-      ) : !goal ? (
-        <EmptyGoals onCreate={onCreate} />
-      ) : (
-        <>
-          <section className="streak-strip">
-            <div className="streak-main">
-              <span className="fire">
-                <Flame size={19} />
-              </span>
-
-              <div>
-                <strong>
-                  {goal.streak || 0} giorni
-                </strong>
-
-                <span>di fila</span>
-              </div>
-            </div>
-
-            <div className="streak-track">
-              <span
-                style={{
-                  width: `${Math.min(
-                    100,
-                    (goal.streak || 0) * 10
-                  )}%`,
-                }}
-              />
-            </div>
-
-            <span className="streak-copy">
-              Continua così
-            </span>
-          </section>
-
-          <section className="today-card">
-            <div className="today-head">
-              <div>
-                <div className="eyebrow">
-                  OBIETTIVO ATTIVO
-                </div>
-
-                <h2>{goal.title}</h2>
-
-                <p>
-                  {goal.category} ·{" "}
-                  {goal.duration_days} giorni
-                </p>
-              </div>
-
-              <div className="today-ring">
-                <span>
-                  {goal.progress || 0}%
-                </span>
-
-                <small>completato</small>
-              </div>
-            </div>
-
-            <div className="goal-bar">
-              <span
-                style={{
-                  width: `${goal.progress || 0}%`,
-                }}
-              />
-            </div>
-
-            <div className="today-footer">
-              <span>
-                Il tuo percorso è salvato nel tuo account.
-              </span>
-
-              <button
-                className="danger-link"
-                onClick={() => onDelete(goal.id)}
-              >
-                Elimina obiettivo
-              </button>
-            </div>
-          </section>
-
-          <section className="grid-2">
-            {goals.slice(0, 4).map((item) => (
-              <div
-                className="panel goal-panel"
-                key={item.id}
-              >
-                <div className="goal-icon violet">
-                  <Target size={20} />
-                </div>
-
-                <div className="goal-panel-head">
-                  <span>{item.category}</span>
-                  <strong>
-                    {item.progress || 0}%
-                  </strong>
-                </div>
-
-                <h3>{item.title}</h3>
-
-                <p>
-                  {item.duration_days} giorni
-                </p>
-
-                <div className="goal-bar">
-                  <span
-                    style={{
-                      width: `${item.progress || 0}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </section>
-        </>
-      )}
-    </div>
-  );
-}
-
-function EmptyGoals({ onCreate }) {
-  return (
-    <section className="empty-goals">
-      <div className="empty-icon">
-        <Target size={28} />
       </div>
 
-      <h2>Ancora nessun obiettivo.</h2>
-
-      <p>
-        Crea il tuo primo obiettivo e inizia il tuo
-        percorso con LifePilot.
-      </p>
-
-      <button
-        className="primary-btn"
-        onClick={onCreate}
-      >
-        <Plus size={18} />
-        Crea il primo obiettivo
-      </button>
-    </section>
-  );
-}
-
-function Goals({
-  goals,
-  loading,
-  onCreate,
-  onDelete,
-}) {
-  return (
-    <div className="stack">
-      <section className="hero-row">
-        <div>
-          <div className="eyebrow">
-            OBIETTIVI
+      {loading ? (
+        <div className="empty-panel">
+          <div className="empty-icon">
+            <Sparkles size={22} />
           </div>
 
-          <h1>I miei obiettivi</h1>
-
-          <p>
-            Tutto ciò che vuoi costruire, in un unico
-            posto.
-          </p>
+          <strong>Sto preparando il tuo spazio...</strong>
         </div>
-
-        <button
-          className="primary-btn"
-          onClick={onCreate}
-        >
-          <Plus size={18} />
-          Nuovo obiettivo
-        </button>
-      </section>
-
-      {loading ? (
-        <div className="panel loading-panel">
-          Caricamento...
-        </div>
-      ) : goals.length === 0 ? (
-        <EmptyGoals onCreate={onCreate} />
+      ) : !goal ? (
+        <EmptyDashboard onCreate={onCreate} />
       ) : (
-        <div className="grid-2">
-          {goals.map((goal) => (
-            <article
-              className="panel goal-panel"
-              key={goal.id}
-            >
-              <div className="goal-icon violet">
-                <Target size={20} />
+        <div className="dashboard-grid">
+          <section className="goal-panel">
+            <div className="goal-panel-head">
+              <div>
+                <span className="eyebrow">
+                  IL TUO OBIETTIVO
+                </span>
+
+                <h2>{goal.title}</h2>
               </div>
 
-              <div className="goal-panel-head">
-                <span>{goal.category}</span>
+              <div className="goal-icon">
+                <Target size={20} />
+              </div>
+            </div>
 
+            <div className="progress-area">
+              <div className="progress-labels">
+                <span>Progressi</span>
                 <strong>
-                  {goal.progress || 0}%
+                  {Number(goal.progress || 0)}%
                 </strong>
               </div>
 
-              <h3>{goal.title}</h3>
-
-              <p>
-                {goal.duration_days} giorni ·{" "}
-                {goal.streak || 0} giorni di streak
-              </p>
-
-              <div className="goal-bar">
-                <span
+              <div className="progress-track">
+                <div
+                  className="progress-fill"
                   style={{
-                    width: `${goal.progress || 0}%`,
+                    width: `${Math.min(
+                      100,
+                      Math.max(
+                        0,
+                        Number(goal.progress || 0)
+                      )
+                    )}%`,
                   }}
                 />
               </div>
+            </div>
 
-              <button
-                className="danger-link"
-                onClick={() => onDelete(goal.id)}
-              >
-                Elimina
-              </button>
-            </article>
-          ))}
+            <div className="goal-stats">
+              <Stat
+                icon={<Flame size={17} />}
+                label="Streak"
+                value={`${Number(
+                  goal.streak || 0
+                )} giorni`}
+              />
+
+              <Stat
+                icon={<CalendarDays size={17} />}
+                label="Durata"
+                value={`${Number(
+                  goal.duration_days || 0
+                )} giorni`}
+              />
+
+              <Stat
+                icon={<Trophy size={17} />}
+                label="Obiettivi"
+                value={`${goals.length}`}
+              />
+            </div>
+
+            <button
+              className="secondary-btn"
+              onClick={onViewGoals}
+              type="button"
+            >
+              Gestisci obiettivi
+              <ChevronRight size={16} />
+            </button>
+          </section>
+
+          <section className="today-panel">
+            <div className="section-heading">
+              <div>
+                <span className="eyebrow">
+                  OGGI
+                </span>
+
+                <h3>Il tuo prossimo passo</h3>
+              </div>
+
+              <div className="today-icon">
+                <Check size={18} />
+              </div>
+            </div>
+
+            <div className="today-empty">
+              <div className="today-ring">
+                <span>0</span>
+                <small>task</small>
+              </div>
+
+              <strong>
+                Nessuna attività per oggi
+              </strong>
+
+              <p>
+                Quando aggiungerai le tue attività,
+                appariranno qui.
+              </p>
+            </div>
+          </section>
         </div>
       )}
-    </div>
-  );
-}
 
-function Progress({ goals }) {
-  const average =
-    goals.length === 0
-      ? 0
-      : Math.round(
-          goals.reduce(
-            (sum, goal) =>
-              sum + Number(goal.progress || 0),
-            0
-          ) / goals.length
-        );
-
-  return (
-    <div className="stack">
-      <section className="hero-row">
-        <div>
-          <div className="eyebrow">
-            PROGRESSI
-          </div>
-
-          <h1>Stai andando avanti.</h1>
-
-          <p>
-            Guarda il quadro generale dei tuoi obiettivi.
-          </p>
-        </div>
-      </section>
-
-      <section className="stats-grid">
-        <div className="stat-card">
-          <Target size={20} />
-          <span>Obiettivi</span>
-          <strong>{goals.length}</strong>
-        </div>
-
-        <div className="stat-card">
-          <Trophy size={20} />
-          <span>Progressi medi</span>
-          <strong>{average}%</strong>
-        </div>
-
-        <div className="stat-card">
-          <Flame size={20} />
-          <span>Streak migliore</span>
-          <strong>
-            {Math.max(
-              0,
-              ...goals.map(
-                (goal) => Number(goal.streak || 0)
-              )
-            )}
-          </strong>
-        </div>
-      </section>
-
-      <section className="panel">
+      <section className="quick-section">
         <div className="section-heading">
           <div>
-            <h2>Panoramica</h2>
-            <p>
-              Il progresso dei tuoi obiettivi.
-            </p>
+            <span className="eyebrow">SPAZIO PERSONALE</span>
+            <h3>Inizia da qui</h3>
           </div>
         </div>
 
-        <div className="progress-list">
-          {goals.map((goal) => (
-            <div
-              className="progress-row"
-              key={goal.id}
-            >
-              <div>
-                <strong>{goal.title}</strong>
-                <span>{goal.category}</span>
-              </div>
+        <div className="quick-grid">
+          <button
+            className="quick-card"
+            onClick={onCreate}
+            type="button"
+          >
+            <span className="quick-card-icon">
+              <Plus size={19} />
+            </span>
 
-              <div className="progress-value">
-                {goal.progress || 0}%
-              </div>
-            </div>
-          ))}
+            <strong>Nuovo obiettivo</strong>
 
-          {goals.length === 0 && (
-            <p className="muted">
-              Crea il tuo primo obiettivo per vedere i
-              progressi.
-            </p>
-          )}
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function Coach() {
-  const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState([
-    {
-      role: "assistant",
-      text:
-        "Ciao! Sono il Coach di LifePilot. Raccontami cosa vuoi migliorare oggi.",
-    },
-  ]);
-
-  function send() {
-    const text = message.trim();
-
-    if (!text) return;
-
-    setMessages((current) => [
-      ...current,
-      {
-        role: "user",
-        text,
-      },
-      {
-        role: "assistant",
-        text:
-          "Ho ricevuto il tuo messaggio. Il collegamento al Coach AI verrà utilizzato qui per costruire il prossimo passo personalizzato.",
-      },
-    ]);
-
-    setMessage("");
-  }
-
-  return (
-    <div className="stack">
-      <section className="hero-row">
-        <div>
-          <div className="eyebrow">
-            COACH AI
-          </div>
-
-          <h1>Un passo alla volta.</h1>
-
-          <p>
-            Scrivi cosa vuoi ottenere o cosa ti sta
-            bloccando.
-          </p>
-        </div>
-      </section>
-
-      <section className="coach-panel">
-        <div className="chat">
-          {messages.map((item, index) => (
-            <div
-              className={
-                item.role === "user"
-                  ? "chat-row user"
-                  : "chat-row"
-              }
-              key={index}
-            >
-              <div
-                className={
-                  item.role === "user"
-                    ? "chat-user"
-                    : "chat-avatar"
-                }
-              >
-                {item.role === "user" ? (
-                  <User size={16} />
-                ) : (
-                  <Sparkles size={16} />
-                )}
-              </div>
-
-              <div className="chat-bubble">
-                {item.text}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="chat-composer">
-          <input
-            value={message}
-            onChange={(e) =>
-              setMessage(e.target.value)
-            }
-            onKeyDown={(e) => {
-              if (e.key === "Enter") send();
-            }}
-            placeholder="Scrivi un messaggio..."
-          />
+            <span>
+              Dai una nuova direzione al tuo percorso.
+            </span>
+          </button>
 
           <button
-            className="primary-btn icon-only"
-            onClick={send}
+            className="quick-card"
+            onClick={onViewGoals}
+            type="button"
           >
-            <ArrowRight size={18} />
+            <span className="quick-card-icon">
+              <Target size={19} />
+            </span>
+
+            <strong>I miei obiettivi</strong>
+
+            <span>
+              Visualizza e gestisci ciò che vuoi raggiungere.
+            </span>
+          </button>
+
+          <button
+            className="quick-card"
+            type="button"
+          >
+            <span className="quick-card-icon">
+              <BarChart3 size={19} />
+            </span>
+
+            <strong>Progressi</strong>
+
+            <span>
+              Tieni sotto controllo il tuo percorso.
+            </span>
           </button>
         </div>
       </section>
@@ -1283,51 +1277,336 @@ function Coach() {
   );
 }
 
-function Profile({
-  user,
-  name,
-  onLogout,
-}) {
+function EmptyDashboard({ onCreate }) {
   return (
-    <div className="stack">
-      <section className="hero-row">
-        <div>
-          <div className="eyebrow">
-            PROFILO
-          </div>
+    <div className="empty-panel large-empty">
+      <div className="empty-icon">
+        <Target size={25} />
+      </div>
 
-          <h1>Il tuo account.</h1>
+      <div>
+        <span className="eyebrow">
+          IL TUO SPAZIO È PRONTO
+        </span>
 
-          <p>
-            Gestisci il tuo profilo LifePilot.
-          </p>
-        </div>
-      </section>
+        <h2>
+          Da dove vuoi iniziare?
+        </h2>
 
-      <section className="profile-card panel">
-        <div className="profile-avatar">
-          {getInitial(name)}
-        </div>
+        <p>
+          Non hai ancora creato nessun obiettivo.
+          Scegli qualcosa che vuoi migliorare e
+          iniziamo insieme.
+        </p>
 
-        <div className="profile-info">
-          <span>Nome</span>
-          <strong>{name}</strong>
-
-          <span>Email</span>
-          <strong>{user.email}</strong>
-        </div>
-      </section>
-
-      <button
-        className="logout-large"
-        onClick={onLogout}
-      >
-        <LogOut size={18} />
-        Esci da LifePilot
-      </button>
+        <button
+          className="primary-btn"
+          onClick={onCreate}
+          type="button"
+        >
+          Crea il primo obiettivo
+          <ArrowRight size={17} />
+        </button>
+      </div>
     </div>
   );
 }
+
+function Stat({ icon, label, value }) {
+  return (
+    <div className="stat">
+      <span className="stat-icon">{icon}</span>
+
+      <div>
+        <small>{label}</small>
+        <strong>{value}</strong>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   GOALS
+   ========================================================= */
+
+function GoalsView({
+  goals,
+  loading,
+  onCreate,
+  onDelete,
+}) {
+  return (
+    <div className="page">
+      <div className="page-header">
+        <div>
+          <div className="eyebrow">IL TUO PERCORSO</div>
+
+          <h1>I miei obiettivi</h1>
+
+          <p>
+            Tutto ciò che vuoi costruire, in un unico posto.
+          </p>
+        </div>
+
+        <button
+          className="primary-btn"
+          onClick={onCreate}
+          type="button"
+        >
+          <Plus size={17} />
+          Nuovo obiettivo
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="empty-panel">
+          <strong>Caricamento obiettivi...</strong>
+        </div>
+      ) : goals.length === 0 ? (
+        <div className="empty-panel large-empty">
+          <div className="empty-icon">
+            <Target size={24} />
+          </div>
+
+          <div>
+            <span className="eyebrow">
+              NESSUN OBIETTIVO
+            </span>
+
+            <h2>
+              Il tuo percorso parte da qui.
+            </h2>
+
+            <p>
+              Crea il tuo primo obiettivo e inizia a
+              costruire il percorso che desideri.
+            </p>
+
+            <button
+              className="primary-btn"
+              onClick={onCreate}
+              type="button"
+            >
+              Crea obiettivo
+              <ArrowRight size={17} />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="goals-list">
+          {goals.map((goal) => (
+            <GoalCard
+              key={goal.id}
+              goal={goal}
+              onDelete={() =>
+                onDelete(goal.id)
+              }
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GoalCard({ goal, onDelete }) {
+  const progress = Math.min(
+    100,
+    Math.max(0, Number(goal.progress || 0))
+  );
+
+  return (
+    <article className="goal-card">
+      <div className="goal-card-main">
+        <div className="goal-card-icon">
+          <Target size={20} />
+        </div>
+
+        <div className="goal-card-content">
+          <span className="eyebrow">
+            {goal.category || "PERSONALE"}
+          </span>
+
+          <h3>{goal.title}</h3>
+
+          <div className="goal-card-progress">
+            <div className="progress-track">
+              <div
+                className="progress-fill"
+                style={{
+                  width: `${progress}%`,
+                }}
+              />
+            </div>
+
+            <strong>{progress}%</strong>
+          </div>
+        </div>
+      </div>
+
+      <div className="goal-card-side">
+        <div>
+          <small>Durata</small>
+          <strong>
+            {Number(goal.duration_days || 0)} giorni
+          </strong>
+        </div>
+
+        <div>
+          <small>Streak</small>
+          <strong>
+            {Number(goal.streak || 0)} giorni
+          </strong>
+        </div>
+
+        <button
+          className="icon-btn danger-btn"
+          onClick={onDelete}
+          type="button"
+          title="Elimina obiettivo"
+        >
+          <Trash2 size={17} />
+        </button>
+      </div>
+    </article>
+  );
+}
+
+/* =========================================================
+   PROFILE
+   ========================================================= */
+
+function ProfileView({ profile, user }) {
+  return (
+    <div className="page">
+      <div className="page-header">
+        <div>
+          <div className="eyebrow">IL TUO ACCOUNT</div>
+
+          <h1>Profilo</h1>
+
+          <p>
+            Le informazioni personali che hai scelto per
+            LifePilot.
+          </p>
+        </div>
+      </div>
+
+      <section className="profile-panel">
+        <div className="profile-avatar-large">
+          {getInitial(profile.nickname)}
+        </div>
+
+        <div className="profile-info">
+          <div className="profile-field">
+            <span>Nickname</span>
+            <strong>{profile.nickname}</strong>
+          </div>
+
+          <div className="profile-field">
+            <span>Data di nascita</span>
+            <strong>
+              {formatBirthDate(profile.birth_date)}
+            </strong>
+          </div>
+
+          <div className="profile-field">
+            <span>Email account</span>
+            <strong>{user.email || "—"}</strong>
+          </div>
+
+          <div className="profile-field">
+            <span>Accesso</span>
+            <strong>
+              {user.app_metadata?.provider === "google"
+                ? "Google"
+                : "Email"}
+            </strong>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/* =========================================================
+   SETTINGS
+   ========================================================= */
+
+function SettingsView({
+  profile,
+  user,
+  onLogout,
+}) {
+  return (
+    <div className="page">
+      <div className="page-header">
+        <div>
+          <div className="eyebrow">LIFEPILOT</div>
+
+          <h1>Impostazioni</h1>
+
+          <p>
+            Gestisci il tuo spazio personale.
+          </p>
+        </div>
+      </div>
+
+      <div className="settings-list">
+        <section className="settings-card">
+          <div className="settings-card-icon">
+            <User size={19} />
+          </div>
+
+          <div>
+            <span className="eyebrow">
+              PROFILO
+            </span>
+
+            <h3>{profile.nickname}</h3>
+
+            <p>
+              Account collegato a{" "}
+              {user.email || "il tuo account"}.
+            </p>
+          </div>
+        </section>
+
+        <section className="settings-card danger-card">
+          <div className="settings-card-icon">
+            <LogOut size={19} />
+          </div>
+
+          <div>
+            <span className="eyebrow">
+              SESSIONE
+            </span>
+
+            <h3>Esci da LifePilot</h3>
+
+            <p>
+              Chiudi la sessione corrente su questo
+              dispositivo.
+            </p>
+
+            <button
+              className="secondary-btn danger-secondary"
+              onClick={onLogout}
+              type="button"
+            >
+              <LogOut size={16} />
+              Esci
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   CREATE GOAL MODAL
+   ========================================================= */
 
 function CreateGoalModal({
   onClose,
@@ -1337,23 +1616,18 @@ function CreateGoalModal({
   const [category, setCategory] =
     useState("Personale");
   const [duration, setDuration] =
-    useState(30);
-  const [busy, setBusy] = useState(false);
+    useState("30");
 
-  async function submit(e) {
-    e.preventDefault();
+  function submit(event) {
+    event.preventDefault();
 
     if (!title.trim()) return;
 
-    setBusy(true);
-
-    await onCreate({
-      title: title.trim(),
+    onCreate({
+      title,
       category,
       duration_days: duration,
     });
-
-    setBusy(false);
   }
 
   return (
@@ -1363,179 +1637,230 @@ function CreateGoalModal({
     >
       <div
         className="modal-card"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(event) =>
+          event.stopPropagation()
+        }
       >
         <div className="modal-head">
           <div>
             <span className="eyebrow">
-              NUOVO PERCORSO
+              NUOVO OBIETTIVO
             </span>
 
-            <h2>Crea un obiettivo</h2>
+            <h2>Cosa vuoi raggiungere?</h2>
           </div>
 
           <button
             className="icon-btn"
             onClick={onClose}
+            type="button"
           >
             <X size={20} />
           </button>
         </div>
 
         <form
-          className="auth-form"
+          className="modal-form"
           onSubmit={submit}
         >
           <label>
-            Cosa vuoi raggiungere?
+            Obiettivo
+
             <input
+              type="text"
               value={title}
-              onChange={(e) =>
-                setTitle(e.target.value)
+              onChange={(event) =>
+                setTitle(event.target.value)
               }
-              placeholder="Es. Allenarmi 3 volte a settimana"
+              placeholder="Es. Allenarmi con costanza"
+              autoFocus
+              maxLength={100}
               required
             />
           </label>
 
           <label>
             Categoria
+
             <select
               value={category}
-              onChange={(e) =>
-                setCategory(e.target.value)
+              onChange={(event) =>
+                setCategory(event.target.value)
               }
             >
               <option>Personale</option>
-              <option>Fitness</option>
               <option>Salute</option>
-              <option>Studio</option>
+              <option>Fitness</option>
               <option>Lavoro</option>
+              <option>Studio</option>
               <option>Finanze</option>
               <option>Relazioni</option>
+              <option>Altro</option>
             </select>
           </label>
 
           <label>
             Durata
+
             <select
               value={duration}
-              onChange={(e) =>
-                setDuration(Number(e.target.value))
+              onChange={(event) =>
+                setDuration(event.target.value)
               }
             >
-              <option value={7}>7 giorni</option>
-              <option value={14}>14 giorni</option>
-              <option value={30}>30 giorni</option>
-              <option value={60}>60 giorni</option>
-              <option value={90}>90 giorni</option>
+              <option value="7">
+                7 giorni
+              </option>
+
+              <option value="14">
+                14 giorni
+              </option>
+
+              <option value="30">
+                30 giorni
+              </option>
+
+              <option value="60">
+                60 giorni
+              </option>
+
+              <option value="90">
+                90 giorni
+              </option>
+
+              <option value="180">
+                180 giorni
+              </option>
             </select>
           </label>
 
-          <button
-            className="primary-btn auth-submit"
-            disabled={busy}
-            type="submit"
-          >
-            {busy
-              ? "Salvataggio..."
-              : "Crea obiettivo"}
+          <div className="modal-actions">
+            <button
+              className="secondary-btn"
+              onClick={onClose}
+              type="button"
+            >
+              Annulla
+            </button>
 
-            {!busy && <ArrowRight size={17} />}
-          </button>
+            <button
+              className="primary-btn"
+              type="submit"
+            >
+              Crea obiettivo
+              <ArrowRight size={17} />
+            </button>
+          </div>
         </form>
       </div>
     </div>
   );
 }
 
-function BottomNavItem({
-  icon,
-  label,
-  active,
-  onClick,
-}) {
-  return (
-    <button
-      className={
-        active
-          ? "bottom-item active"
-          : "bottom-item"
-      }
-      onClick={onClick}
-    >
-      {icon}
-      <span>{label}</span>
-    </button>
-  );
-}
+/* =========================================================
+   GOOGLE ICON
+   ========================================================= */
 
 function GoogleIcon() {
   return (
     <svg
-      width="19"
-      height="19"
+      width="18"
+      height="18"
       viewBox="0 0 24 24"
       aria-hidden="true"
+      className="google-icon"
     >
       <path
         fill="#4285F4"
-        d="M21.35 12.23c0-.78-.07-1.53-.22-2.23H12v4.22h5.24a4.48 4.48 0 0 1-1.94 2.94v2.45h3.14c1.84-1.69 2.91-4.18 2.91-7.38Z"
+        d="M21.35 12.23c0-.79-.07-1.55-.23-2.28H12v4.31h5.22a4.46 4.46 0 0 1-1.94 2.93v2.43h3.14c1.84-1.69 2.93-4.18 2.93-7.39Z"
       />
+
       <path
         fill="#34A853"
-        d="M12 21.75c2.63 0 4.84-.87 6.45-2.36l-3.14-2.45c-.87.58-1.98.92-3.31.92-2.54 0-4.7-1.72-5.47-4.03H3.28v2.53A9.75 9.75 0 0 0 12 21.75Z"
+        d="M12 21.6c2.63 0 4.84-.87 6.45-2.36l-3.14-2.43c-.87.58-1.98.92-3.31.92-2.54 0-4.69-1.72-5.46-4.03H3.29v2.5A9.74 9.74 0 0 0 12 21.6Z"
       />
+
       <path
         fill="#FBBC05"
-        d="M6.53 13.83A5.86 5.86 0 0 1 6.22 12c0-.64.11-1.26.31-1.83V7.64H3.28A9.75 9.75 0 0 0 2.25 12c0 1.57.38 3.05 1.03 4.36l3.25-2.53Z"
+        d="M6.54 13.7a5.85 5.85 0 0 1 0-3.4V7.8H3.29a9.68 9.68 0 0 0 0 8.4l3.25-2.5Z"
       />
+
       <path
         fill="#EA4335"
-        d="M12 6.14c1.43 0 2.72.49 3.73 1.45l2.79-2.79C16.84 3.21 14.63 2.25 12 2.25a9.75 9.75 0 0 0-8.72 5.39l3.25 2.53C6.3 7.86 8.46 6.14 12 6.14Z"
+        d="M12 6.27c1.43 0 2.71.49 3.72 1.45l2.79-2.79C16.84 3.34 14.63 2.4 12 2.4a9.74 9.74 0 0 0-8.71 5.4l3.25 2.5C7.31 7.99 9.46 6.27 12 6.27Z"
       />
     </svg>
   );
 }
 
-function getInitial(name) {
-  return String(name || "U")
+/* =========================================================
+   HELPERS
+   ========================================================= */
+
+function getInitial(value) {
+  if (!value) return "U";
+
+  return value
     .trim()
     .charAt(0)
     .toUpperCase();
 }
 
-function capitalize(value) {
-  const text = String(value || "");
+function formatBirthDate(value) {
+  if (!value) return "—";
 
-  return text.charAt(0).toUpperCase() + text.slice(1);
+  const date = new Date(`${value}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("it-IT", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(date);
 }
 
 function getAuthError(error) {
-  const message = error?.message || "";
+  const message =
+    error?.message ||
+    "Si è verificato un errore.";
 
   if (
-    message.toLowerCase().includes("invalid login credentials")
+    message.toLowerCase().includes(
+      "invalid login credentials"
+    )
   ) {
     return "Email o password non corretti.";
   }
 
   if (
-    message.toLowerCase().includes("email not confirmed")
+    message.toLowerCase().includes(
+      "email not confirmed"
+    )
   ) {
-    return "Devi prima confermare il tuo indirizzo email.";
+    return "Conferma prima la tua email.";
   }
 
   if (
-    message.toLowerCase().includes("user already registered")
+    message.toLowerCase().includes(
+      "user already registered"
+    )
   ) {
     return "Esiste già un account con questa email.";
   }
 
-  return message || "Si è verificato un errore.";
+  return message;
 }
 
-createRoot(document.getElementById("root")).render(
+/* =========================================================
+   ROOT
+   ========================================================= */
+
+createRoot(
+  document.getElementById("root")
+).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>
