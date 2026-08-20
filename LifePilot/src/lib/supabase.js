@@ -24,35 +24,11 @@ export const supabaseEnabled = Boolean(client)
 export const supabaseReady = Boolean(client)
 
 if (supabase) {
-  const originalGetSession = supabase.auth.getSession.bind(supabase.auth)
   const originalSignInWithOAuth = supabase.auth.signInWithOAuth.bind(supabase.auth)
   const originalSignUp = supabase.auth.signUp.bind(supabase.auth)
 
-  // Auth bootstrap must NEVER reject or remain pending forever: App.jsx waits
-  // for getSession() before it can leave the loading screen. A stale refresh
-  // token, broken PKCE state, offline browser, or transient Auth error must
-  // therefore degrade to "no session" rather than deadlock the UI.
-  supabase.auth.getSession = async (...args) => {
-    const timeout = new Promise((resolve) => {
-      setTimeout(() => {
-        console.warn('[LifePilot] Supabase getSession timed out; starting without a session')
-        resolve({ data: { session: null }, error: new Error('Auth session timeout') })
-      }, 5000)
-    })
-
-    try {
-      return await Promise.race([
-        originalGetSession(...args),
-        timeout,
-      ])
-    } catch (error) {
-      console.warn('[LifePilot] Supabase getSession failed; starting without a session', error)
-      return { data: { session: null }, error }
-    }
-  }
-
-  // Always keep OAuth inside the current LifePilot deployment and preserve
-  // the explicit account selector for Google.
+  // Keep OAuth inside the current LifePilot deployment and preserve the
+  // explicit account selector for Google.
   supabase.auth.signInWithOAuth = (credentials = {}) => {
     const options = credentials.options ?? {}
     const redirectTo =
