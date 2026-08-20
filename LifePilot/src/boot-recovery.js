@@ -1,6 +1,6 @@
 // LifePilot boot recovery: recover from a blocked Supabase session without deleting app data.
 const startedAt = Date.now()
-const RECOVERY_KEY = 'lifepilot_boot_recovery_v2'
+const RECOVERY_KEY = 'lifepilot_boot_recovery_v3'
 
 function isStuckOnLoading() {
   const root = document.getElementById('root')
@@ -12,8 +12,7 @@ function isStuckOnLoading() {
 function clearAuthCache() {
   try {
     // IMPORTANT: never delete LifePilot application/preferences keys here.
-    // The previous recovery cleared every `lifepilot_*` key, including its own
-    // recovery flag, causing an infinite reload loop on mobile.
+    // Only Supabase/Auth storage is cleared during recovery.
     for (const storage of [localStorage, sessionStorage]) {
       for (const key of Object.keys(storage)) {
         if (key.startsWith('sb-') || key.startsWith('supabase.')) {
@@ -60,6 +59,7 @@ function recover() {
   showRecoveryScreen()
 }
 
+// Fail fast on mobile browsers: never leave the user staring at "Caricamento...".
 setTimeout(() => {
-  if (Date.now() - startedAt >= 7000) recover()
-}, 7000)
+  if (Date.now() - startedAt >= 2500) recover()
+}, 2500)
