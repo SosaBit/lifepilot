@@ -13,10 +13,10 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- Boot recovery loads independently so a blocked auth/session can never leave a blank loading screen forever. -->
-    <script type="module" src="/src/boot-recovery.js?v=20260820-recovery1"></script>
-    <script type="module" src="/src/stable-app.jsx?v=20260820-recovery1"></script>
-    <script type="module" src="/src/ui-enhancements.js?v=20260820-recovery1"></script>
-    <script type="module" src="/src/ui-fixes.js?v=20260820-recovery1"></script>
+    <!-- Recovery runs before the React app so a blocked Auth session cannot trap mobile users on loading. -->
+    <script type="module" src="/src/boot-recovery.js?v=20260820-recovery2"></script>
+    <script type="module" src="/src/stable-app.jsx?v=20260820-recovery2"></script>
+    <script type="module" src="/src/ui-enhancements.js?v=20260820-recovery2"></script>
+    <script type="module" src="/src/ui-fixes.js?v=20260820-recovery2"></script>
   </body>
 </html>
