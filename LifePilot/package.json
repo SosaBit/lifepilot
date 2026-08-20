@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "node scripts/write-version.mjs && vite build",
+    "verify:live": "node scripts/verify-live-system.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
