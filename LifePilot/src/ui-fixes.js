@@ -4,19 +4,16 @@ const SETTINGS_GEAR = '<circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.
 
 const STYLE = `
 .pageicon.settings-fixed,.staticon.settings-fixed{display:grid!important;place-items:center!important;overflow:hidden!important}
-.pageicon.settings-fixed .icon,.staticon.settings-fixed .icon{width:21px!important;height:21px!important;stroke-width:2!important;transform:none!important;display:block!important}
+svg.settings-fixed{width:21px!important;height:21px!important;stroke-width:2!important;transform:none!important;display:block!important}
 .dashboard-head h1{max-width:100%;overflow-wrap:anywhere;word-break:break-word;letter-spacing:-.025em!important}
 .dashboard-head p{max-width:720px;margin-top:8px!important}
 .date-line{white-space:normal!important;line-height:1.35!important}
-.lp-account-context{margin-top:8px;color:var(--muted);font-size:12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.lp-account-context strong{color:var(--text)}
 .lp-profile-extra{margin-top:16px}
 .lp-profile-extra .info-item{min-height:48px}
 @media(max-width:800px){
  .dashboard-head h1{font-size:31px!important;line-height:1.05!important}
  .dashboard-head p{font-size:15px!important;line-height:1.45!important}
  .date-line{font-size:11px!important}
- .lp-account-context{font-size:11px}
 }
 @media(max-width:420px){.dashboard-head h1{font-size:28px!important}.hero h2{font-size:24px!important}}
 `;
