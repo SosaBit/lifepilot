@@ -1,3 +1,5 @@
+import { supabase } from './lib/supabase';
+
 const SETTINGS_GEAR = '<circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.8 1.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.1h-2.6V20a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-1.8-1.8.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1.0H6v-2.6h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1 1.8-1.8.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6V4h2.6v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1 1.8 1.8-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.1v2.6h-.1a1.7 1.7 0 0 0-1.6 1Z"/>';
 
 const STYLE = `
@@ -39,8 +41,8 @@ function fixSettingsIcons(){
 function userPreferenceKey(userId){return `lifepilot-user-prefs-${userId}`}
 async function isolateAccountPreferences(){
  try{
-   if(!window.supabase) return;
-   const {data:{user}}=await window.supabase.auth.getUser();
+   if(!supabase) return;
+   const {data:{user}}=await supabase.auth.getUser();
    if(!user) return;
    const key=userPreferenceKey(user.id);
    const prefs=JSON.parse(localStorage.getItem(key)||'{}');
