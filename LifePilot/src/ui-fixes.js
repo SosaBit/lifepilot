@@ -35,18 +35,14 @@ function fixSettingsIcons(){
  });
 }
 
-function userPreferenceKey(userId){return `lifepilot-user-prefs-${userId}`}
 async function isolateAccountPreferences(){
  try{
    if(!supabase) return;
    const {data:{user}}=await supabase.auth.getUser();
    if(!user) return;
-   const key=userPreferenceKey(user.id);
-   const prefs=JSON.parse(localStorage.getItem(key)||'{}');
-   ['lifepilot-nickname','lifepilot-notifications','lifepilot-sounds','lifepilot-reduced-motion'].forEach(k=>localStorage.removeItem(k));
-   if(prefs.nickname){
-     const h=[...document.querySelectorAll('h1')].find(x=>x.textContent.includes('Buongiorno,'));
-     if(h) h.textContent=`Buongiorno, ${prefs.nickname}.`;
+   const active=localStorage.getItem('lifepilot-active-user');
+   if(active && active!==user.id){
+     ['lifepilot-nickname','lifepilot-notifications','lifepilot-sounds','lifepilot-reduced-motion'].forEach(k=>localStorage.removeItem(k));
    }
    localStorage.setItem('lifepilot-active-user',user.id);
  }catch{}
@@ -60,8 +56,12 @@ function enhanceDashboardDate(){
    const now=new Date();
    const date=new Intl.DateTimeFormat('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(now);
    line.textContent='';
-   const icon=document.createElement('span');icon.textContent='📅';icon.setAttribute('aria-hidden','true');
-   line.append(icon,document.createTextNode(date));
+   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+   svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('width','15');svg.setAttribute('height','15');
+   svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','1.9');
+   svg.setAttribute('stroke-linecap','round');svg.setAttribute('stroke-linejoin','round');svg.setAttribute('aria-hidden','true');
+   svg.innerHTML='<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/>';
+   line.append(svg,document.createTextNode(date));
    line.title=`Ora del dispositivo: ${new Intl.DateTimeFormat('it-IT',{hour:'2-digit',minute:'2-digit',timeZoneName:'short'}).format(now)}`;
  };
  update();
@@ -72,7 +72,8 @@ function enhanceDashboardDate(){
 function addProfileContext(){
  const h1=[...document.querySelectorAll('h1')].find(x=>x.textContent.trim()==='Profilo');
  if(!h1 || document.getElementById('lp-profile-extra')) return;
- const panel=h1.closest('.panel');
+ const main=h1.closest('.main');
+ const panel=main?.querySelector('.panel');
  if(!panel) return;
  const extra=document.createElement('div');extra.id='lp-profile-extra';extra.className='panel lp-profile-extra';
  const now=new Date();
