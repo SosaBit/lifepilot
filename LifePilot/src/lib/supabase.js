@@ -1,8 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 
 // LifePilot uses only its own Supabase project and a browser-safe public key.
-// The legacy anon key is intentionally used here for maximum compatibility with
-// the installed supabase-js version and Supabase Auth endpoints.
 const url = 'https://rhafdhwixhqxufylavag.supabase.co'
 const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoYWZkaHdpeGhxeHVmeWxhdmFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwNzExMDgsImV4cCI6MjEwMjY0NzEwOH0.zi9gsBitbVnt3ni8Jgqy0eK77r5QDekIY3HU3wC8TfE'
 
@@ -26,8 +24,22 @@ export const supabaseEnabled = Boolean(client)
 export const supabaseReady = Boolean(client)
 
 if (supabase) {
+  const originalGetSession = supabase.auth.getSession.bind(supabase.auth)
   const originalSignInWithOAuth = supabase.auth.signInWithOAuth.bind(supabase.auth)
   const originalSignUp = supabase.auth.signUp.bind(supabase.auth)
+
+  // A mobile browser can leave the Auth request pending indefinitely when a
+  // stale network/session state is present. The app must always be able to
+  // reach the login screen instead of remaining on "Caricamento..." forever.
+  supabase.auth.getSession = async (...args) => {
+    const timeout = new Promise((resolve) => {
+      setTimeout(() => {
+        console.warn('[LifePilot] Supabase getSession timed out; starting without a session')
+        resolve({ data: { session: null }, error: new Error('Auth session timeout') })
+      }, 5000)
+    })
+    return Promise.race([originalGetSession(...args), timeout])
+  }
 
   // Always keep OAuth inside the current LifePilot deployment and preserve
   // the explicit account selector for Google.
