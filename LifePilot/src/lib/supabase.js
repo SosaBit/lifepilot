@@ -13,6 +13,11 @@ try {
       autoRefreshToken: true,
       detectSessionInUrl: true,
       flowType: 'pkce',
+      // Android browsers can retain a stale Web Locks lock after a tab is
+      // discarded. That can leave getSession() waiting forever on startup.
+      // LifePilot is a single-page browser client, so serialize Auth calls
+      // locally instead of relying on navigator.locks across discarded tabs.
+      lock: async (_name, _acquireTimeout, fn) => fn(),
     },
   })
 } catch (error) {
