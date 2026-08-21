@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
-// LifePilot uses only its own Supabase project and a browser-safe public key.
+// LifePilot uses only its own Supabase project and a browser-safe publishable key.
 const url = 'https://rhafdhwixhqxufylavag.supabase.co'
-const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJyaGFmZGhid2l4aHF4dWZ5bGF2YWciLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc4NzA3MTEwOCwiZXhwIjoxNzgyNjQ3MTA4fQ.zi9gsBitbVnt3ni8Jgqy0eK77r5QDekIY3HU3wC8TfE'
+const anonKey = 'sb_publishable_vUZLRreqEV5FBBN0-y-vww_hvLmloA0'
 
 let client = null
 
