@@ -4,22 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#6c5ce7" />
-    <meta name="description" content="LifePilot — obiettivi, costanza e progressi." />
+    <meta name="description" content="LifePilot — trasforma obiettivi in azioni quotidiane, con progressi, focus e un piano personale." />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <title>LifePilot</title>
-    <style>html,body,#root{margin:0;min-height:100%;width:100%;}body{background:#f6f3ff}</style>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="canonical" href="https://lifepilot-nine-psi.vercel.app/" />
+    <title>LifePilot — Il tuo piano, un passo alla volta</title>
   </head>
   <body>
     <div id="root"></div>
-    <script src="/live-update.js" defer></script>
-    <script type="module" src="/src/boot-recovery.js?v=20260821-live4"></script>
-    <script type="module" src="/src/stable-app.jsx?v=20260821-live4"></script>
-    <script type="module" src="/src/ui-enhancements.js?v=20260820-live3"></script>
-    <script type="module" src="/src/ui-fixes.js?v=20260820-live3"></script>
-    <script type="module" src="/src/live-content-bridge.js?v=20260820-live2"></script>
-    <script type="module" src="/src/admin-console.js?v=20260820-live1"></script>
-    <script type="module" src="/src/boot-timeout.js?v=20260821-live1"></script>
+    <script type="module" src="/src/main.jsx"></script>
+    <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}))}</script>
   </body>
 </html>
