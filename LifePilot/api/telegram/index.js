@@ -2,17 +2,15 @@ import { supabaseAdmin, telegram, json, getSettings, ensureOwner, ownerOnly, com
 
 function help() {
   return [
-    '<b>LifePilot Telegram Scheduler</b>',
-    '',
-    'Comandi:',
+    '<b>LifePilot Telegram Scheduler</b>', '',
     '<code>/start</code> — attiva il tuo account proprietario',
     '<code>/addchat</code> — registra questo gruppo (il bot deve essere admin)',
     '<code>/schedulehere 60 testo</code> — invia il testo ogni 60 minuti',
     '<code>/schedules</code> — mostra le programmazioni',
-    '<code>/pause ID</code> — mette in pausa una programmazione',
-    '<code>/resume ID</code> — riattiva una programmazione',
-    '<code>/delete ID</code> — elimina una programmazione',
-    '<code>/removechat</code> — rimuove questo gruppo dal bot',
+    '<code>/pause ID</code> — mette in pausa',
+    '<code>/resume ID</code> — riattiva',
+    '<code>/delete ID</code> — elimina',
+    '<code>/removechat</code> — disattiva questo gruppo',
     '',
     'Il sistema pubblica solo nelle chat registrate e verificate dove il bot dispone dei permessi necessari.',
   ].join('\n');
@@ -27,16 +25,19 @@ async function ensureGroupAdmin(chatId, botUserId) {
   return ['administrator', 'creator'].includes(member.status);
 }
 
-async function getBotUser() {
-  return telegram('getMe');
-}
-
 async function listSchedules(db) {
   const { data, error } = await db.from('telegram_schedules')
     .select('id,message,interval_minutes,active,next_run_at,last_run_at,telegram_destinations(title,chat_id)')
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data || [];
+}
+
+async function findScheduleByPrefix(db, prefix) {
+  const { data, error } = await db.from('telegram_schedules').select('id');
+  if (error) throw error;
+  const matches = (data || []).filter((row) => row.id.toLowerCase().startsWith(prefix.toLowerCase()));
+  return matches;
 }
 
 export default async function handler(req, res) {
@@ -76,22 +77,18 @@ export default async function handler(req, res) {
         await reply(chat.id, 'Usa /addchat direttamente nel gruppo che vuoi registrare.');
         return json(res, 200, { ok: true });
       }
-      const bot = await getBotUser();
+      const bot = await telegram('getMe');
       const allowed = await ensureGroupAdmin(chat.id, bot.id);
       if (!allowed) {
         await reply(chat.id, '❌ Non posso registrare questo gruppo: il bot deve essere amministratore.');
         return json(res, 200, { ok: true });
       }
       const { data, error } = await db.from('telegram_destinations').upsert({
-        chat_id: String(chat.id),
-        title: chat.title || String(chat.id),
-        chat_type: chat.type,
-        active: true,
-        verified_admin: true,
-        created_by: user.id,
+        chat_id: String(chat.id), title: chat.title || String(chat.id), chat_type: chat.type,
+        active: true, verified_admin: true, created_by: user.id,
       }, { onConflict: 'chat_id' }).select().single();
       if (error) throw error;
-      await reply(chat.id, `✅ Gruppo registrato: <b>${escapeHtml(data.title)}</b>\nOra puoi usare:\n<code>/schedulehere 60 Il tuo messaggio</code>`);
+      await reply(chat.id, `✅ Gruppo registrato: <b>${escapeHtml(data.title)}</b>\nOra usa:\n<code>/schedulehere 60 Il tuo messaggio</code>`);
       return json(res, 200, { ok: true });
     }
 
@@ -121,22 +118,18 @@ export default async function handler(req, res) {
         return json(res, 200, { ok: true });
       }
       const { data: schedule, error } = await db.from('telegram_schedules').insert({
-        destination_id: destination.id,
-        message: text,
-        interval_minutes: minutes,
-        active: true,
-        next_run_at: new Date(Date.now() + minutes * 60_000).toISOString(),
-        created_by: user.id,
+        destination_id: destination.id, message: text, interval_minutes: minutes, active: true,
+        next_run_at: new Date(Date.now() + minutes * 60_000).toISOString(), created_by: user.id,
       }).select().single();
       if (error) throw error;
-      await reply(chat.id, `✅ Programmazione creata.\nID: <code>${schedule.id.slice(0, 8)}</code>\nIntervallo: <b>${minutes} min</b>\nProssimo invio: tra ${minutes} minuti.`);
+      await reply(chat.id, `✅ Programmazione creata.\nID: <code>${schedule.id.slice(0, 8)}</code>\nIntervallo: <b>${minutes} min</b>\nPrimo invio tra ${minutes} minuti.`);
       return json(res, 200, { ok: true });
     }
 
     if (command === '/schedules') {
       const schedules = await listSchedules(db);
       if (!schedules.length) {
-        await reply(chat.id, 'Nessuna programmazione attiva.');
+        await reply(chat.id, 'Nessuna programmazione.');
         return json(res, 200, { ok: true });
       }
       const lines = schedules.map((s) => {
@@ -154,9 +147,8 @@ export default async function handler(req, res) {
         await reply(chat.id, `Formato: <code>${command} ID</code>`);
         return json(res, 200, { ok: true });
       }
-      const { data: candidates, error: findError } = await db.from('telegram_schedules').select('id').ilike('id', `${prefix}%`).limit(2);
-      if (findError) throw findError;
-      if (!candidates?.length) {
+      const candidates = await findScheduleByPrefix(db, prefix);
+      if (!candidates.length) {
         await reply(chat.id, 'ID non trovato. Usa /schedules.');
         return json(res, 200, { ok: true });
       }
@@ -169,11 +161,14 @@ export default async function handler(req, res) {
         const { error } = await db.from('telegram_schedules').delete().eq('id', id);
         if (error) throw error;
         await reply(chat.id, '🗑️ Programmazione eliminata.');
-      } else {
-        const active = command === '/resume';
-        const { error } = await db.from('telegram_schedules').update({ active, next_run_at: active ? new Date().toISOString() : undefined }).eq('id', id);
+      } else if (command === '/resume') {
+        const { error } = await db.from('telegram_schedules').update({ active: true, next_run_at: new Date().toISOString() }).eq('id', id);
         if (error) throw error;
-        await reply(chat.id, active ? '▶️ Programmazione riattivata.' : '⏸️ Programmazione messa in pausa.');
+        await reply(chat.id, '▶️ Programmazione riattivata.');
+      } else {
+        const { error } = await db.from('telegram_schedules').update({ active: false }).eq('id', id);
+        if (error) throw error;
+        await reply(chat.id, '⏸️ Programmazione messa in pausa.');
       }
       return json(res, 200, { ok: true });
     }
