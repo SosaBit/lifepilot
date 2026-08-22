@@ -1,7 +1,17 @@
-import React from 'react';
+import React,{lazy,Suspense} from 'react';
 import { createRoot } from 'react-dom/client';
-import LifePilotV2 from './lifepilot-v2.jsx';
 import './lifepilot-v2.css';
 
-// Canonical LifePilot v2 entrypoint: legacy runtime scripts are intentionally not imported here.
-createRoot(document.getElementById('root')).render(<LifePilotV2 />);
+const LifePilotV2=lazy(()=>import('./lifepilot-v2.jsx'));
+
+function AppLoading(){
+  return <div className="lp-splash"><div className="lp-logo"><span>✦</span></div><h1>LifePilot</h1><p>Prepariamo il tuo percorso…</p></div>;
+}
+
+// Canonical LifePilot v2 entrypoint. The application bundle is loaded on demand
+// so the initial JS payload stays small and the public landing can remain fast.
+createRoot(document.getElementById('root')).render(
+  <Suspense fallback={<AppLoading/>}>
+    <LifePilotV2 />
+  </Suspense>
+);
