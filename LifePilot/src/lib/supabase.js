@@ -13,7 +13,6 @@ try {
       autoRefreshToken: true,
       detectSessionInUrl: true,
       flowType: 'pkce',
-      // Avoid a stale browser Web Lock preventing the single-page app from starting.
       lock: async (_name, _acquireTimeout, fn) => fn(),
     },
   })
@@ -26,7 +25,6 @@ export const supabaseEnabled = Boolean(client)
 export const supabaseReady = Boolean(client)
 
 if (supabase) {
-  // Never allow Auth startup to keep the entire UI on "Caricamento...".
   const originalGetSession = supabase.auth.getSession.bind(supabase.auth)
   supabase.auth.getSession = async (...args) => {
     let timeoutId
@@ -45,8 +43,6 @@ if (supabase) {
     }
   }
 
-  // Password login uses a bounded direct Auth request. This avoids a browser-side
-  // Auth lock/network promise leaving the button stuck on "Attendi..." forever.
   const originalSignInWithPassword = supabase.auth.signInWithPassword.bind(supabase.auth)
   supabase.auth.signInWithPassword = async (credentials = {}) => {
     const controller = new AbortController()
@@ -76,8 +72,6 @@ if (supabase) {
       if (error?.name === 'AbortError') {
         return { data: { user: null, session: null }, error: new Error('Il server di autenticazione non risponde. Controlla la connessione e riprova.') }
       }
-      // Keep the standard Supabase implementation as a fallback for transient
-      // browser differences, but bound that fallback as well.
       try {
         return await Promise.race([
           originalSignInWithPassword(credentials),
@@ -88,6 +82,69 @@ if (supabase) {
       }
     } finally {
       clearTimeout(timeoutId)
+    }
+  }
+
+  const originalFunctionsInvoke = supabase.functions.invoke.bind(supabase.functions)
+
+  // Retry Edge Functions after refreshing Auth, then use a direct browser fetch
+  // as a final fallback for transient client-side transport errors.
+  supabase.functions.invoke = async (functionName, options = {}) => {
+    const invokeOnce = async () => originalFunctionsInvoke(functionName, options)
+    let first = await invokeOnce()
+    if (!first?.error) return first
+
+    const firstMessage = String(first.error?.message || '')
+    const shouldRetry = /failed to send a request|jwt|token|unauthorized|401|network/i.test(firstMessage)
+    if (!shouldRetry) return first
+
+    try {
+      const refreshed = await supabase.auth.refreshSession()
+      if (refreshed?.data?.session) {
+        first = await invokeOnce()
+        if (!first?.error) return first
+      }
+    } catch (refreshError) {
+      console.warn('[LifePilot] Edge Function session refresh failed:', refreshError)
+    }
+
+    const sessionResult = await originalGetSession()
+    const accessToken = sessionResult?.data?.session?.access_token
+    if (!accessToken || typeof window === 'undefined') return first
+
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 20000)
+      const response = await fetch(`${url}/functions/v1/${functionName}`, {
+        method: options.method || 'POST',
+        headers: {
+          apikey: anonKey,
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          ...(options.headers || {}),
+        },
+        body: options.body === undefined ? undefined : JSON.stringify(options.body),
+        signal: controller.signal,
+      })
+      clearTimeout(timeoutId)
+      const text = await response.text()
+      let data = null
+      try { data = text ? JSON.parse(text) : null } catch { data = text }
+      if (!response.ok) {
+        const message = data?.error || data?.message || `Edge Function ${functionName} ha risposto ${response.status}.`
+        return { data, error: new Error(message), response }
+      }
+      return { data, error: null, response }
+    } catch (fallbackError) {
+      console.error('[LifePilot] Edge Function fallback failed:', fallbackError)
+      return {
+        data: null,
+        error: new Error(
+          fallbackError?.name === 'AbortError'
+            ? 'La generazione AI sta impiegando troppo tempo. Riprova.'
+            : 'Impossibile raggiungere il servizio AI. Controlla la connessione e riprova.',
+        ),
+      }
     }
   }
 
