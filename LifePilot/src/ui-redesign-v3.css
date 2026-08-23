@@ -1,0 +1,20 @@
+/* LifePilot 2.0 — structural UI pass */
+:root{--lp-max:1180px;--lp-glow:rgba(97,230,208,.16)}
+.lp-main{padding-top:34px}.page{max-width:var(--lp-max)}
+/* Dashboard: stronger command-center hierarchy */
+.page>.hero{padding:8px 2px 4px;margin-bottom:24px}.page>.hero h1{max-width:760px}.page>.hero .primary{min-height:46px}
+.page>.metric-grid{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:22px}
+.page>.metric-grid .metric{position:relative;overflow:hidden}.page>.metric-grid .metric:after{content:"";position:absolute;width:90px;height:90px;right:-38px;top:-42px;border-radius:50%;background:radial-gradient(circle,var(--lp-glow),transparent 68%);pointer-events:none}
+.page>.panel{transition:border-color .2s ease,transform .2s ease}.page>.panel:hover{border-color:rgba(97,230,208,.13)}
+.page>.panel:first-of-type{padding:28px}.page>.panel:first-of-type .panel-head h2{font-size:25px}
+.quick-row{margin-top:20px}.quick-row button:not(.primary){min-height:42px}
+/* Goals: cards feel like objects, not generic database rows */
+.goal-line{align-items:flex-start}.goal-line h2{font-family:Manrope,sans-serif;font-size:24px;letter-spacing:-.03em;margin:5px 0 6px}.goal-line p{margin:0 0 14px}.goal-line+.progress{height:11px}
+/* Focus: dedicated visual zone */
+.focus.panel{background:radial-gradient(circle at 50% 30%,rgba(97,230,208,.07),transparent 42%),linear-gradient(145deg,#101820,#0a1016);min-height:430px;display:flex;flex-direction:column;justify-content:center}.focus .timer{font-size:clamp(64px,10vw,112px);margin:18px 0 28px}.focus .primary{min-width:180px;min-height:48px}
+/* Navigation / chrome */
+.lp-top{box-shadow:0 1px 0 rgba(255,255,255,.025)}.lp-brand:focus-visible,.icon:focus-visible,.nav button:focus-visible,.primary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+/* Mobile: app-like bottom safe area and touch targets */
+@media(max-width:900px){.lp-main{padding-top:22px}.page>.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.page>.hero{padding-top:2px}.page>.hero .primary{width:100%}.page>.panel:first-of-type{padding:21px}.nav button{min-height:46px}.icon,.avatar{min-width:44px;min-height:44px}.quick-row button{min-height:44px}.task-row,.task-button{min-height:52px}.lp-drawer{width:min(320px,88vw)}}
+@media(max-width:520px){.page>.metric-grid{grid-template-columns:1fr 1fr}.metric strong{font-size:18px}.metric small{font-size:10px}.goal-line h2{font-size:21px}.focus.panel{min-height:390px;padding:24px 14px}.focus-presets button{min-height:42px}.pricing{grid-template-columns:1fr}.lp-main{padding-left:12px;padding-right:12px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
