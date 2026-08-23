@@ -4,74 +4,108 @@ const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Content-Type": "application/json",
 }
 
 const openai = new OpenAI({ apiKey: Deno.env.get("OPENAI_API_KEY") })
+
+function normalizePlan(result: any, dailyMinutes: number, category: string) {
+  const milestones = Array.isArray(result?.milestones) ? result.milestones : []
+  const plan: any[] = []
+
+  for (const milestone of milestones) {
+    const day = Math.max(1, Number(milestone?.day || 1))
+    const milestoneTitle = String(milestone?.title || "Prossimo passo").trim()
+    const tasks = Array.isArray(milestone?.tasks) ? milestone.tasks : []
+
+    for (const task of tasks) {
+      if (plan.length >= 30) break
+      const title = String(task || "").trim()
+      if (!title) continue
+      plan.push({
+        day,
+        title,
+        minutes: dailyMinutes,
+        category,
+        milestone: milestoneTitle,
+      })
+    }
+    if (plan.length >= 30) break
+  }
+
+  return plan
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors })
 
   try {
-    if (!Deno.env.get("OPENAI_API_KEY")) {
-      return new Response(JSON.stringify({ error: "OPENAI_API_KEY non configurata nel backend." }), { status: 500, headers: { ...cors, "Content-Type": "application/json" } })
+    const apiKey = Deno.env.get("OPENAI_API_KEY")
+    if (!apiKey) {
+      return new Response(JSON.stringify({ error: "OPENAI_API_KEY non configurata nel backend." }), {
+        status: 500,
+        headers: cors,
+      })
     }
 
     const body = await req.json()
     const title = String(body.title || "").trim()
     const category = String(body.category || "Produttività").trim()
-    const days = Number(body.days || 30)
-    const dailyMinutes = Number(body.dailyMinutes || 20)
+    const days = Math.max(1, Math.min(365, Number(body.days || 30)))
+    const dailyMinutes = Math.max(5, Math.min(240, Number(body.dailyMinutes || 20)))
 
     if (!title) {
-      return new Response(JSON.stringify({ error: "Inserisci un obiettivo." }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } })
+      return new Response(JSON.stringify({ error: "Inserisci un obiettivo." }), { status: 400, headers: cors })
     }
 
     const prompt = `
-Sei il Goal Intelligence Coach di LifePilot. Il tuo compito non è trasformare una frase generica in una checklist generica: devi trasformarla in un percorso concreto, verificabile e realistico.
+Sei il Goal Intelligence Coach di LifePilot. Trasforma l'obiettivo dell'utente in un percorso concreto, verificabile e realistico.
 
-OBIETTIVO DELL'UTENTE: ${title}
+OBIETTIVO: ${title}
 CATEGORIA: ${category}
-DURATA DISPONIBILE: ${days} giorni
+DURATA: ${days} giorni
 TEMPO DISPONIBILE AL GIORNO: ${dailyMinutes} minuti
 
-REGOLE IMPORTANTI:
-1. Prima interpreta il vero risultato che l'utente vuole ottenere.
-2. Se l'obiettivo è generico (es. "trovare lavoro", "mettermi in forma", "imparare inglese", "risparmiare", "aprire un'attività"), NON produrre attività vaghe come "cerca informazioni", "fai ricerca", "lavora sull'obiettivo" o "inizia a studiare".
-3. Per un obiettivo generico, scegli un percorso iniziale sensato e rendilo concreto usando assunzioni esplicite e ragionevoli. Non inventare dati personali dell'utente.
-4. Spezza il percorso in fasi progressive: definizione del target, preparazione, esecuzione, misurazione e revisione quando applicabile.
-5. Ogni task deve descrivere un'azione osservabile che una persona può completare in una singola sessione e deve essere compatibile con ${dailyMinutes} minuti.
-6. Usa numeri quando rendono il task verificabile (es. "scrivi 3 versioni", "invia 2 candidature mirate", "dedica 20 minuti").
-7. Collega ogni attività a un risultato concreto e indica come misurare il successo.
-8. Evita promesse eccessive. Se mancano informazioni importanti, crea comunque un buon percorso iniziale e segnala le informazioni che LifePilot dovrebbe chiedere in seguito.
-9. Adatta il piano alla categoria e al significato dell'obiettivo. "Trovare lavoro" deve diventare un percorso di ricerca occupazionale; "imparare inglese" un percorso di apprendimento; "correre una 10K" un percorso di allenamento, ecc.
-10. Il piano deve essere utile già dal primo giorno, senza richiedere all'utente di capire da solo cosa fare.
+REGOLE:
+1. Capisci il risultato reale che l'utente vuole ottenere.
+2. Se l'obiettivo è generico (es. "trovare lavoro", "mettermi in forma", "imparare inglese", "risparmiare", "aprire un'attività"), NON creare una checklist generica.
+3. Per obiettivi generici usa assunzioni ragionevoli e dichiarale. Non inventare dati personali.
+4. Organizza il percorso in fasi progressive: target, preparazione, esecuzione, misurazione e revisione quando applicabile.
+5. Ogni task deve essere un'azione osservabile completabile in una singola sessione.
+6. Rendi le azioni misurabili usando numeri quando utile.
+7. Ogni attività deve avere un risultato concreto.
+8. Non fare promesse eccessive.
+9. Se servono informazioni personali, inseriscile in personalization_questions senza bloccare il primo piano.
+10. Il piano deve essere utile già dal primo giorno.
+11. Produci massimo 30 task totali.
 
-Per "trovare lavoro", per esempio, privilegia attività come definire 1-2 ruoli target, identificare competenze mancanti, preparare CV/LinkedIn, creare candidature mirate, costruire una lista di aziende, fare networking e monitorare candidature. Non assumere settore, città o esperienza: lascia questi elementi come personalizzazioni da chiarire in seguito.
+Per "trovare lavoro", privilegia: definire 1-2 ruoli target, identificare competenze richieste e gap, preparare CV/LinkedIn, creare candidature mirate, costruire una lista di aziende, networking e monitoraggio delle candidature. Non assumere settore, città, esperienza o tipo di contratto.
 
-Restituisci SOLO JSON con questa forma:
+Restituisci SOLO JSON:
 {
-  "title": "titolo specifico e orientato al risultato",
-  "summary": "spiegazione concreta del percorso in una frase",
-  "assumptions": ["assunzione ragionevole usata", "informazione che sarebbe utile personalizzare"],
-  "personalization_questions": ["domanda breve e utile", "seconda domanda solo se davvero necessaria"],
+  "title": "titolo specifico orientato al risultato",
+  "summary": "percorso spiegato in una frase",
+  "assumptions": ["assunzione ragionevole"],
+  "personalization_questions": ["domanda breve e utile"],
   "milestones": [
-    {"day": 1, "title": "fase concreta", "tasks": ["azione osservabile", "azione osservabile", "azione osservabile"]},
-    {"day": 2, "title": "fase concreta", "tasks": ["azione osservabile", "azione osservabile", "azione osservabile"]},
-    {"day": 3, "title": "fase concreta", "tasks": ["azione osservabile", "azione osservabile", "azione osservabile"]}
+    {"day": 1, "title": "fase", "tasks": ["azione concreta", "azione concreta"]}
   ],
-  "today": ["azione concreta da fare oggi", "seconda azione concreta", "terza azione concreta"],
+  "today": ["azione concreta da fare oggi"],
   "success_metric": "metrica verificabile",
   "difficulty": "facile|media|alta"
 }
 
-Non limitarti ai primi tre giorni se ${days} giorni lo rendono utile: crea milestone distribuite lungo il percorso, mantenendo però i task abbastanza piccoli da essere eseguibili. Le azioni devono essere specifiche, progressive, misurabili e compatibili con il tempo disponibile.
+Distribuisci le milestone lungo i ${days} giorni senza rendere i task troppo grandi per ${dailyMinutes} minuti al giorno.
 `
 
     const completion = await openai.chat.completions.create({
       model: "gpt-5-mini",
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: "Sei un coach pratico e un goal architect. Sii concreto, progressivo e realistico. Non fare promesse mediche o finanziarie." },
+        {
+          role: "system",
+          content: "Sei un coach pratico e goal architect. Sii concreto, progressivo e realistico. Non fare promesse mediche o finanziarie.",
+        },
         { role: "user", content: prompt },
       ],
       temperature: 0.55,
@@ -79,9 +113,29 @@ Non limitarti ai primi tre giorni se ${days} giorni lo rendono utile: crea miles
 
     const content = completion.choices[0]?.message?.content || "{}"
     const result = JSON.parse(content)
+    const plan = normalizePlan(result, dailyMinutes, category)
 
-    return new Response(JSON.stringify(result), { status: 200, headers: { ...cors, "Content-Type": "application/json" } })
+    if (!plan.length) {
+      return new Response(JSON.stringify({ error: "L'AI ha restituito un piano vuoto. Riprova." }), {
+        status: 502,
+        headers: cors,
+      })
+    }
+
+    return new Response(
+      JSON.stringify({
+        ...result,
+        plan,
+        source: "openai",
+        version: "goal-intelligence-v2",
+      }),
+      { status: 200, headers: cors },
+    )
   } catch (error) {
-    return new Response(JSON.stringify({ error: error?.message || "Errore nella generazione del piano." }), { status: 500, headers: { ...cors, "Content-Type": "application/json" } })
+    console.error("generate-plan error", error)
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : "Errore nella generazione del piano." }),
+      { status: 500, headers: cors },
+    )
   }
 })
