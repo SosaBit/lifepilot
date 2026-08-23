@@ -44,7 +44,7 @@
 
 /* La bottom navigation resta sotto la sidebar quando il drawer è aperto */
 .lp-mobile-bottom-nav {
-  z-index: 90 !important;
+  z-index: 50 !important;
 }
 
 @media (max-width: 900px) {
