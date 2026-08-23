@@ -10,6 +10,7 @@ import './lifepilot-polish.css';
 import './lifepilot-launch-polish.css';
 import './billing-enhancer.js';
 import './admin-enhancer.js';
+import './ux-navigation-bridge.js';
 import Landing from './landing.jsx';
 import {startAnalytics} from './analytics.js';
 
