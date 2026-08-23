@@ -87,15 +87,16 @@ if (supabase) {
 
   const originalFunctionsInvoke = supabase.functions.invoke.bind(supabase.functions)
 
-  // Retry Edge Functions after refreshing Auth, then use a direct browser fetch
-  // as a final fallback for transient client-side transport errors.
+  // Edge Function transport wrapper. For every transport/non-2xx error we
+  // refresh the session and make one direct request so the real HTTP status
+  // and response body are not hidden behind the generic supabase-js message.
   supabase.functions.invoke = async (functionName, options = {}) => {
     const invokeOnce = async () => originalFunctionsInvoke(functionName, options)
     let first = await invokeOnce()
     if (!first?.error) return first
 
     const firstMessage = String(first.error?.message || '')
-    const shouldRetry = /failed to send a request|jwt|token|unauthorized|401|network/i.test(firstMessage)
+    const shouldRetry = /failed to send a request|edge function returned a non-2xx|non-2xx|jwt|token|unauthorized|401|network|fetch/i.test(firstMessage)
     if (!shouldRetry) return first
 
     try {
@@ -114,7 +115,7 @@ if (supabase) {
 
     try {
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 20000)
+      const timeoutId = setTimeout(() => controller.abort(), 30000)
       const response = await fetch(`${url}/functions/v1/${functionName}`, {
         method: options.method || 'POST',
         headers: {
@@ -123,7 +124,11 @@ if (supabase) {
           'Content-Type': 'application/json',
           ...(options.headers || {}),
         },
-        body: options.body === undefined ? undefined : JSON.stringify(options.body),
+        body: options.body === undefined
+          ? undefined
+          : typeof options.body === 'string'
+            ? options.body
+            : JSON.stringify(options.body),
         signal: controller.signal,
       })
       clearTimeout(timeoutId)
@@ -131,7 +136,8 @@ if (supabase) {
       let data = null
       try { data = text ? JSON.parse(text) : null } catch { data = text }
       if (!response.ok) {
-        const message = data?.error || data?.message || `Edge Function ${functionName} ha risposto ${response.status}.`
+        const message = data?.error || data?.message || data?.msg || `Edge Function ${functionName} ha risposto HTTP ${response.status}.`
+        console.error(`[LifePilot] ${functionName} HTTP ${response.status}:`, data)
         return { data, error: new Error(message), response }
       }
       return { data, error: null, response }
