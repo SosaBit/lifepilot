@@ -20,10 +20,15 @@ export default function OnboardingGate({children}){
       if(!alive)return;
       setSession(s);
       if(!s){setState('ready');return;}
-      const {data:p}=await supabase.from('profiles').select('nickname,onboarding_completed').eq('id',s.user.id).maybeSingle();
+      const {data:p,error:profileError}=await supabase.from('profiles').select('nickname,onboarding_completed').eq('id',s.user.id).maybeSingle();
       if(!alive)return;
-      if(p?.onboarding_completed){setState('ready');return;}
+      if(profileError){setError(profileError.message||'Non riesco a leggere il profilo.');setState('onboarding');return;}
       if(p?.nickname)setName(p.nickname);
+      if(p?.onboarding_completed){
+        const {count}=await supabase.from('goals').select('id',{count:'exact',head:true}).eq('user_id',s.user.id);
+        if(!alive)return;
+        if((count||0)>0){setState('ready');return;}
+      }
       setState('onboarding');
     };
     boot();
@@ -41,7 +46,8 @@ export default function OnboardingGate({children}){
   const finish=async()=>{
     setSaving(true);setError('');
     const nickname=name.trim();
-    const {error:e}=await supabase.from('profiles').upsert({id:session.user.id,nickname,birth_date:null,onboarding_completed:true},{onConflict:'id'});
+    const payload={id:session.user.id,nickname,onboarding_completed:true};
+    const {error:e}=await supabase.from('profiles').upsert(payload,{onConflict:'id'});
     if(e){setError(e.message||'Non riesco a salvare il profilo.');setSaving(false);return;}
     if(goal.trim()){
       const {error:ge}=await supabase.from('goals').insert({user_id:session.user.id,title:goal.trim(),category:'personale',days:30,daily_minutes:20,priority:2,progress:0,streak:0});
