@@ -6,6 +6,7 @@ import LifePilotV2 from './lifepilot-v2.jsx';
 import OnboardingGate from './onboarding-gate.jsx';
 import MobileBottomNav from './mobile-bottom-nav.jsx';
 import './lifepilot-v2.css';
+import './lifepilot-polish.css';
 import './billing-enhancer.js';
 import './admin-enhancer.js';
 import Landing from './landing.jsx';
