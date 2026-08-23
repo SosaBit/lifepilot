@@ -1,116 +1,15 @@
 /* Sidebar: menu scrollabile + logout sempre visibile */
-.lp-side {
-  overflow: hidden;
-  position: relative;
-  z-index: 200 !important;
-}
+.lp-side{overflow:hidden;position:relative;z-index:200!important}
+.lp-side .nav{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding-right:2px}
+.lp-side .logout{flex:0 0 48px!important;height:48px!important;min-height:48px!important;margin-top:12px;margin-bottom:0;padding:0 14px;display:flex!important;align-items:center;gap:10px;visibility:visible!important;opacity:1!important;border:1px solid var(--border);background:var(--surface);color:#7f8b99;border-radius:12px;position:relative;z-index:300!important}
+.lp-side .logout:hover{background:var(--surface-2);color:var(--text)}
 
-.lp-side .nav {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: 2px;
-}
-
-.lp-side .logout {
-  flex: 0 0 48px !important;
-  height: 48px !important;
-  min-height: 48px !important;
-  margin-top: 12px;
-  margin-bottom: 0;
-  padding: 0 14px;
-  display: flex !important;
-  align-items: center;
-  gap: 10px;
-  visibility: visible !important;
-  opacity: 1 !important;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: #7f8b99;
-  border-radius: 12px;
-  position: relative;
-  z-index: 300 !important;
-}
-
-.lp-side .logout:hover {
-  background: var(--surface-2);
-  color: var(--text);
-}
-
-/* Mobile drawer: deve stare sopra la bottom navigation */
-.drawer-bg {
-  position: fixed !important;
-  inset: 0 !important;
-  z-index: 1000 !important;
-}
-
-.lp-drawer {
-  width: 290px;
-  height: 100dvh !important;
-  max-height: 100dvh !important;
-  min-height: 0;
-  overflow: hidden !important;
-  display: flex !important;
-  flex-direction: column !important;
-  position: relative !important;
-  z-index: 1001 !important;
-  padding: 18px 18px max(18px, env(safe-area-inset-bottom)) !important;
-  isolation: isolate;
-}
-
-.lp-drawer .drawer-head {
-  flex: 0 0 auto !important;
-}
-
-.lp-drawer .nav {
-  flex: 1 1 auto !important;
-  min-height: 0 !important;
-  overflow-y: auto !important;
-  overflow-x: hidden;
-  padding: 0 2px 12px 0;
-  scrollbar-width: thin;
-  overscroll-behavior: contain;
-}
-
-.lp-drawer .logout {
-  flex: 0 0 48px !important;
-  height: 48px !important;
-  min-height: 48px !important;
-  width: 100%;
-  margin-top: 10px !important;
-  margin-bottom: 0 !important;
-  padding: 0 14px !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 10px !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  border: 1px solid var(--border) !important;
-  background: var(--surface) !important;
-  color: #7f8b99 !important;
-  border-radius: 12px !important;
-  position: relative !important;
-  z-index: 1002 !important;
-}
-
-.lp-drawer .logout svg {
-  width: 18px;
-  height: 18px;
-  flex: 0 0 auto;
-}
-
-/* La bottom navigation resta sotto la sidebar quando il drawer è aperto */
-.lp-mobile-bottom-nav {
-  z-index: 10 !important;
-}
-
-@media (max-width: 900px) {
-  .lp-drawer {
-    padding-bottom: max(18px, env(safe-area-inset-bottom)) !important;
-  }
-
-  .lp-main {
-    padding-bottom: 112px !important;
-  }
-}
+/* Mobile drawer */
+.drawer-bg{position:fixed!important;inset:0!important;z-index:1000!important}
+.lp-drawer{width:290px;height:100dvh!important;max-height:100dvh!important;min-height:0;overflow:hidden!important;display:flex!important;flex-direction:column!important;position:relative!important;z-index:1001!important;padding:18px 18px max(18px,env(safe-area-inset-bottom))!important;isolation:isolate}
+.lp-drawer .drawer-head{flex:0 0 auto!important}
+.lp-drawer .nav{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden;padding:0 2px 80px 0!important;scrollbar-width:thin;overscroll-behavior:contain}
+.lp-drawer .logout{position:absolute!important;left:18px!important;right:18px!important;bottom:max(18px,env(safe-area-inset-bottom))!important;width:auto!important;height:48px!important;min-height:48px!important;display:flex!important;flex:0 0 48px!important;align-items:center!important;gap:10px!important;margin:0!important;padding:0 14px!important;visibility:visible!important;opacity:1!important;border:1px solid var(--border)!important;background:var(--surface)!important;color:#7f8b99!important;border-radius:12px!important;z-index:1002!important;box-shadow:0 8px 24px #00000035!important}
+.lp-drawer .logout svg{width:18px;height:18px;flex:0 0 auto}
+.lp-mobile-bottom-nav{z-index:10!important}
+@media(max-width:900px){.lp-drawer{padding-bottom:max(18px,env(safe-area-inset-bottom))!important}.lp-main{padding-bottom:112px!important}}
