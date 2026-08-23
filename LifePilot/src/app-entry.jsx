@@ -8,6 +8,8 @@ import MobileBottomNav from './mobile-bottom-nav.jsx';
 import './lifepilot-v2.css';
 import './lifepilot-polish.css';
 import './lifepilot-launch-polish.css';
+import './qa-hardening.js';
+import './qa-hardening.css';
 import './billing-enhancer.js';
 import './admin-enhancer.js';
 import './ux-navigation-bridge.js';
