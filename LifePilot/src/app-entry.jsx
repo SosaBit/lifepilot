@@ -15,5 +15,6 @@ import {startAnalytics} from './analytics.js';
 const stopAnalytics=startAnalytics();
 const isAppPath=window.location.pathname==='/app'||window.location.pathname.startsWith('/app/');
 const AppShell=()=>isAppPath?<OnboardingGate><LifePilotV2/><MobileBottomNav/></OnboardingGate>:<Landing/>;
-createRoot(document.getElementById('root')).render(<AppShell/>);
+class AppErrorBoundary extends React.Component{constructor(p){super(p);this.state={error:null}}static getDerivedStateFromError(error){return{error}}componentDidCatch(error,info){console.error('LifePilot render error',error,info)}render(){if(this.state.error)return <div className="lp-splash"><div className="lp-logo"><span>✦</span></div><h1>LifePilot</h1><p>Si è verificato un problema temporaneo.</p><button className="primary" onClick={()=>window.location.reload()}>Riprova</button></div>;return this.props.children}}
+createRoot(document.getElementById('root')).render(<AppErrorBoundary><AppShell/></AppErrorBoundary>);
 if(import.meta.hot)import.meta.hot.dispose(stopAnalytics);
