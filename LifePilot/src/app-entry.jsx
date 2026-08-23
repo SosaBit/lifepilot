@@ -4,6 +4,7 @@ import './boot-recovery.js';
 import './boot-timeout.js';
 import LifePilotV2 from './lifepilot-v2.jsx';
 import './lifepilot-v2.css';
+import './ui-redesign-v3.css';
 import './billing-enhancer.js';
 import './admin-enhancer.js';
 import Landing from './landing.jsx';
