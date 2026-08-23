@@ -1,0 +1,12 @@
+/* Keep sidebar navigation scrollable while the logout action stays visible. */
+.lp-side{overflow:hidden}
+.lp-side .nav{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding-right:2px}
+.lp-side .logout{flex:0 0 auto;margin-top:12px}
+.lp-drawer{height:100dvh;max-height:100dvh;overflow:hidden}
+.lp-drawer .nav{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding-right:2px}
+.lp-drawer .logout{flex:0 0 auto;margin-top:12px}
+.lp-mobile-bottom-nav{z-index:90}
+@media(max-width:900px){
+  .lp-drawer{padding-bottom:calc(18px + env(safe-area-inset-bottom))}
+  .lp-main{padding-bottom:112px!important}
+}
