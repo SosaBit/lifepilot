@@ -18,7 +18,7 @@ export default function MobileBottomNav(){
     style.textContent=`
       .lp-mobile-bottom-nav{display:none}
       @media(max-width:900px){
-        .lp-mobile-bottom-nav{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));height:64px;display:grid;grid-template-columns:repeat(5,1fr);align-items:center;padding:6px;background:rgba(10,14,20,.94);border:1px solid #202a36;border-radius:20px;box-shadow:0 18px 50px rgba(0,0,0,.35);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);z-index:90;transform:translateZ(0)}
+        .lp-mobile-bottom-nav{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));height:64px;display:grid;grid-template-columns:repeat(5,1fr);align-items:center;padding:6px;background:rgba(10,14,20,.94);border:1px solid #202a36;border-radius:20px;box-shadow:0 18px 50px rgba(0,0,0,.35);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);z-index:50;transform:translateZ(0)}
         .lp-mobile-bottom-nav button{min-width:0;height:52px;border:0;background:transparent;color:#7f8b99;border-radius:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:10px;font-weight:700;transition:.16s ease}
         .lp-mobile-bottom-nav button.active{background:#5eead414;color:#5eead4}
         .lp-mobile-bottom-nav button:active{transform:scale(.96)}
