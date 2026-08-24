@@ -4,7 +4,7 @@ const NavigationContext=createContext(null);
 export const useNavigation=()=>useContext(NavigationContext);
 export default function AppShell({children}){
  const [route,setRoute]=useState(()=>routeFromPath());
- const navigate=useCallback(next=>{const raw=String(next||'');const key=raw.startsWith('quiz:')?'quiz':routeFromLegacyLabel(raw);const target=raw.startsWith('quiz:')?`/app/quiz/${raw.slice(5)}`:pathForRoute(key);window.history.pushState({route:key},'',target);setRoute(raw.startsWith('quiz:')?raw:key)},[]);
+ const navigate=useCallback(next=>{const raw=String(next||'');const key=raw.startsWith('quiz:')?'quiz':routeFromLegacyLabel(raw);window.history.pushState({route:key},'',pathForRoute(raw.startsWith('quiz:')?raw:key));setRoute(key)},[]);
  React.useEffect(()=>{const onPop=()=>setRoute(routeFromPath());window.addEventListener('popstate',onPop);return()=>window.removeEventListener('popstate',onPop)},[]);
  const value=useMemo(()=>({route,navigate,routes:ROUTES}),[route,navigate]);
  return <NavigationContext.Provider value={value}><AppRouter>{children}</AppRouter></NavigationContext.Provider>;
