@@ -16,9 +16,9 @@ for (const file of files) {
 }
 
 const app = await readFile('src/lifepilot-gate.jsx', 'utf8')
-const required = ['Auth','ProfileSetup','Plan','Goals','Calendar','Focus','Progress','Notifications','Profile','generate-plan','focus_sessions','goal_tasks']
+const required = ['LifePilotGate','Login','Dashboard','Plan','Goals','Focus','AdaptiveQuiz','Gameplay','Progress','Coach','Challenge','Shop','Profile','MobileNav']
 for (const capability of required) {
-  if (!app.includes(capability)) throw new Error(`Missing capability ${capability}`)
+  if (!app.includes(capability)) throw new Error(`Missing gameplay capability: ${capability}`)
 }
 
-console.log('LifePilot smoke checks passed')
+console.log(`LifePilot smoke checks passed (${required.length} gameplay capabilities)`)
