@@ -1,0 +1,6 @@
+/* Final LifePilot UI fixes: logout is visually identical to sidebar items. */
+.lp-side>.logout,.lp-drawer>.logout{width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;height:auto;min-height:0;margin-top:5px;border:0;border-radius:12px;background:transparent;color:#7f8b99;text-align:left;font:inherit;font-weight:400;transition:.18s ease;box-shadow:none;flex:0 0 auto;}
+.lp-side>.logout:hover,.lp-drawer>.logout:hover{background:var(--surface-2);color:var(--text);}
+.lp-side>.logout:focus-visible,.lp-drawer>.logout:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.lp-side>.logout svg,.lp-drawer>.logout svg{width:18px;height:18px;flex:none;}
+@media(min-width:901px){.lp-side>.logout{margin-top:2px;}}
