@@ -1,9 +1,0 @@
-{
-  "name": "LifePilot",
-  "short_name": "LifePilot",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#f6f5fb",
-  "theme_color": "#6c5ce7",
-  "icons": []
-}
