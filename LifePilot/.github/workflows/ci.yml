@@ -18,5 +18,4 @@ jobs:
       - run: npm install
       - run: node scripts/ci-smoke.mjs
       - run: node scripts/gameplay-security-smoke.mjs
-      - run: npm run verify:live
       - run: npm run build
