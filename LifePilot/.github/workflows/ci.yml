@@ -16,6 +16,7 @@ jobs:
         with:
           node-version: 22
       - run: npm install
-      - run: node scripts/ci-smoke.mjs
-      - run: node scripts/gameplay-security-smoke.mjs
+      - run: npm run test:smoke
+      - run: npm run test:ui
+      - run: npm run test:security
       - run: npm run build
