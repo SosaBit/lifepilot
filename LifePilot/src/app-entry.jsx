@@ -16,7 +16,7 @@ import './admin-enhancer.js';
 import './ux-navigation-bridge.js';
 import './functional-polish.js';
 import './quiz-rewards.js';
-import './quiz-abilities.js';
+import './quiz-system-v2.js';
 import './logout-fix.js';
 import Landing from './landing.jsx';
 import {startAnalytics} from './analytics.js';
