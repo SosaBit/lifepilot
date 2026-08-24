@@ -15,7 +15,6 @@ import './billing-enhancer.js';
 import './admin-enhancer.js';
 import './ux-navigation-bridge.js';
 import './functional-polish.js';
-import './gameplay-ui.js';
 import Landing from './landing.jsx';
 import {startAnalytics} from './analytics.js';
 
