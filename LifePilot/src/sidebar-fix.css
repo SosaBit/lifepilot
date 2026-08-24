@@ -4,6 +4,14 @@
 .lp-side .logout{flex:0 0 48px!important;height:48px!important;min-height:48px!important;margin-top:12px;margin-bottom:0;padding:0 14px;display:flex!important;align-items:center;gap:10px;visibility:visible!important;opacity:1!important;border:1px solid var(--border);background:var(--surface);color:#7f8b99;border-radius:12px;position:relative;z-index:300!important}
 .lp-side .logout:hover{background:var(--surface-2);color:var(--text)}
 
+/* Gameplay inserito direttamente nel menu laterale */
+.lp-side .nav .lp-gameplay-nav,
+.lp-drawer .nav .lp-gameplay-nav{display:flex!important;width:100%!important;min-height:44px!important;height:44px!important;flex:0 0 44px!important;align-items:center!important;justify-content:flex-start!important;gap:12px!important;margin:6px 0!important;padding:0 14px!important;box-sizing:border-box!important;border:0!important;border-radius:12px!important;background:transparent!important;color:#f5c76b!important;font:inherit!important;font-weight:700!important;text-align:left!important;cursor:pointer!important;visibility:visible!important;opacity:1!important;position:relative!important;z-index:5!important}
+.lp-side .nav .lp-gameplay-nav:hover,
+.lp-drawer .nav .lp-gameplay-nav:hover{background:rgba(245,199,107,.10)!important;color:#ffd98a!important}
+.lp-side .nav .lp-gameplay-nav span,
+.lp-drawer .nav .lp-gameplay-nav span{display:inline-flex!important;width:20px!important;height:20px!important;align-items:center!important;justify-content:center!important;flex:0 0 20px!important;font-size:18px!important;line-height:1!important}
+
 /* Mobile drawer: la navigazione ha un'altezza propria e il logout viene subito dopo Profilo */
 .drawer-bg{position:fixed!important;inset:0!important;z-index:1000!important}
 .lp-drawer{width:290px;height:100dvh!important;max-height:100dvh!important;min-height:0;overflow:hidden!important;display:flex!important;flex-direction:column!important;position:relative!important;z-index:1001!important;padding:18px!important;padding-bottom:max(18px,env(safe-area-inset-bottom))!important;isolation:isolate}
