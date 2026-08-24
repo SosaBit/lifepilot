@@ -15,6 +15,8 @@ import './billing-enhancer.js';
 import './admin-enhancer.js';
 import './ux-navigation-bridge.js';
 import './functional-polish.js';
+import './quiz-rewards.js';
+import './logout-fix.js';
 import Landing from './landing.jsx';
 import {startAnalytics} from './analytics.js';
 
