@@ -1,11 +1,11 @@
-import React,{createContext,useCallback,useContext,useEffect,useMemo,useState} from 'react';
-import AppRouter,{ROUTES,routeFromLegacyLabel} from './AppRouter.jsx';
+import React,{createContext,useCallback,useContext,useMemo,useState} from 'react';
+import AppRouter,{ROUTES,pathForRoute,routeFromPath,routeFromLegacyLabel} from './AppRouter.jsx';
 const NavigationContext=createContext(null);
 export const useNavigation=()=>useContext(NavigationContext);
 export default function AppShell({children}){
- const [route,setRoute]=useState(()=>routeFromLegacyLabel(document.body?.dataset?.lifepilotRoute||'home'));
- const navigate=useCallback(next=>{const key=routeFromLegacyLabel(next);setRoute(key);window.dispatchEvent(new CustomEvent('lifepilot:route-change',{detail:key}));},[]);
- useEffect(()=>{const onNavigate=e=>navigate(e.detail);const onLegacy=e=>navigate(e.detail);window.addEventListener('lifepilot:navigate',onNavigate);window.addEventListener('lifepilot:legacy-navigate',onLegacy);return()=>{window.removeEventListener('lifepilot:navigate',onNavigate);window.removeEventListener('lifepilot:legacy-navigate',onLegacy)}},[navigate]);
+ const [route,setRoute]=useState(()=>routeFromPath());
+ const navigate=useCallback(next=>{const raw=String(next||'');const key=raw.startsWith('quiz:')?'quiz':routeFromLegacyLabel(raw);const target=raw.startsWith('quiz:')?`/app/quiz/${raw.slice(5)}`:pathForRoute(key);window.history.pushState({route:key},'',target);setRoute(raw.startsWith('quiz:')?raw:key)},[]);
+ React.useEffect(()=>{const onPop=()=>setRoute(routeFromPath());window.addEventListener('popstate',onPop);return()=>window.removeEventListener('popstate',onPop)},[]);
  const value=useMemo(()=>({route,navigate,routes:ROUTES}),[route,navigate]);
  return <NavigationContext.Provider value={value}><AppRouter>{children}</AppRouter></NavigationContext.Provider>;
 }
