@@ -1,0 +1,43 @@
+/* LifePilot launch polish: interaction, accessibility and mobile ergonomics */
+:root{--lp-touch:44px}
+button,a,input,select{touch-action:manipulation}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:disabled{pointer-events:none}
+.primary{min-height:var(--lp-touch)}
+.icon,.avatar{min-width:var(--lp-touch);min-height:var(--lp-touch)}
+.nav button{min-height:var(--lp-touch)}
+input,select{min-height:var(--lp-touch)}
+.task-row,.task-button,.notice{min-height:var(--lp-touch)}
+.lp-main{scroll-margin-top:84px}
+/* Logout is a normal navigation item, visually identical to the other sidebar entries. */
+.lp-side>.logout,.lp-drawer>.logout{width:100%;min-height:var(--lp-touch);height:auto;margin:5px 0 0;padding:12px 14px;border:0;border-radius:12px;background:transparent;color:#7f8b99;display:flex;align-items:center;gap:12px;text-align:left;font:inherit;font-weight:400;box-shadow:none;flex:0 0 auto;transition:.18s ease}
+.lp-side>.logout:hover,.lp-drawer>.logout:hover{background:var(--surface-2);color:var(--text)}
+.lp-side>.logout svg,.lp-drawer>.logout svg{width:18px;height:18px;flex:none}
+.lp-side>.logout:focus-visible,.lp-drawer>.logout:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:900px){
+  .lp-main{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
+  .lp-top{height:64px}
+  .lp-top .lp-brand{gap:8px}
+  .lp-brand span{width:34px;height:34px;border-radius:10px}
+  .hero,.page-head{gap:16px;margin-bottom:20px}
+  .hero .primary,.page-head .primary{width:100%}
+  .panel{margin-bottom:14px}
+  .quick-row{display:grid;grid-template-columns:1fr 1fr}
+  .quick-row button{min-height:44px}
+  .modal-bg{align-items:flex-end;padding:0}
+  .modal{border-radius:22px 22px 0 0;padding-bottom:calc(23px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
+  .lp-drawer{width:min(88vw,330px);padding-bottom:calc(18px + env(safe-area-inset-bottom))}
+}
+@media(max-width:520px){
+  .lp-main{padding-left:12px;padding-right:12px}
+  .metric-grid{grid-template-columns:1fr 1fr}
+  .metric{min-height:70px}
+  .quick-row{grid-template-columns:1fr}
+  .panel-head{align-items:flex-start}
+  .timer{letter-spacing:-.05em}
+  .lp-auth-card,.card{border-radius:20px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+@supports(padding:max(0px)){
+  .lp-top{padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
+}
