@@ -1,5 +1,6 @@
 import React,{useEffect,useState} from 'react';
 import {BarChart3,CalendarDays,Home,Target,Zap,Trophy} from 'lucide-react';
+import './gameplay.css';
 
 const items=[['home','Home',Home],['plan','Piano',BarChart3],['goals','Obiettivi',Target],['calendar','Calendario',CalendarDays],['focus','Focus',Zap],['gameplay','Gameplay',Trophy]];
 
