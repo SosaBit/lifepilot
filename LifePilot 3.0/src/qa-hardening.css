@@ -1,0 +1,46 @@
+#lp-network-banner {
+  position: fixed;
+  left: 50%;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  z-index: 1000;
+  width: min(92vw, 520px);
+  transform: translateX(-50%);
+  padding: 11px 14px;
+  border: 1px solid rgba(84, 226, 207, .28);
+  border-radius: 14px;
+  background: rgba(10, 18, 24, .96);
+  color: #f4fbfa;
+  box-shadow: 0 14px 34px rgba(0,0,0,.32);
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: center;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+#lp-network-banner[data-state="offline"] {
+  border-color: rgba(255, 174, 82, .4);
+}
+
+#lp-network-banner[data-state="online"] {
+  border-color: rgba(84, 226, 207, .45);
+}
+
+#lp-network-banner[hidden] { display: none; }
+
+@media (min-width: 900px) {
+  #lp-network-banner {
+    bottom: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  #lp-network-banner:not([hidden]) {
+    animation: lp-network-in .18s ease-out;
+  }
+}
+
+@keyframes lp-network-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
