@@ -2,87 +2,24 @@ import React,{useEffect,useState} from 'react';
 import {BarChart3,CalendarDays,Home,Target,Zap,Trophy,X,Sparkles,Flame,Coins,ArrowRight} from 'lucide-react';
 import {supabase} from './lib/supabase';
 
-const items=[
-  ['home','Home',Home],
-  ['plan','Piano',BarChart3],
-  ['goals','Obiettivi',Target],
-  ['calendar','Calendario',CalendarDays],
-  ['focus','Focus',Zap],
-  ['gameplay','Gameplay',Trophy]
-];
+const items=[['home','Home',Home],['plan','Piano',BarChart3],['goals','Obiettivi',Target],['calendar','Calendario',CalendarDays],['focus','Focus',Zap],['gameplay','Gameplay',Trophy]];
 
 export default function MobileBottomNav(){
-  const [visible,setVisible]=useState(false);
-  const [active,setActive]=useState('home');
-  const [gameplay,setGameplay]=useState(false);
-  const [stats,setStats]=useState({completed:0,today:0,goals:0,streak:0});
-
+  const [visible,setVisible]=useState(false),[active,setActive]=useState('home'),[gameplay,setGameplay]=useState(false),[stats,setStats]=useState({completed:0,today:0,goals:0,streak:0});
   useEffect(()=>{
-    const style=document.createElement('style');
-    style.textContent=`
+    const style=document.createElement('style');style.textContent=`
       .lp-mobile-bottom-nav{display:none}
-      @media(max-width:900px){
-        .lp-mobile-bottom-nav{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));height:66px;display:grid;grid-template-columns:repeat(6,1fr);align-items:center;padding:5px;background:rgba(10,14,20,.96);border:1px solid #202a36;border-radius:20px;box-shadow:0 18px 50px rgba(0,0,0,.35);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);z-index:50;transform:translateZ(0)}
-        .lp-mobile-bottom-nav button{min-width:0;height:54px;border:0;background:transparent;color:#7f8b99;border-radius:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:9px;font-weight:700;transition:.16s ease;white-space:nowrap}
-        .lp-mobile-bottom-nav button.active{background:#5eead414;color:#5eead4}
-        .lp-mobile-bottom-nav button.gameplay{color:#f5c76b}
-        .lp-mobile-bottom-nav button.gameplay.active{background:#f5c76b18;color:#ffd98a}
-        .lp-mobile-bottom-nav button:active{transform:scale(.96)}
-        .lp-mobile-bottom-nav button:focus-visible{outline:2px solid #5eead4;outline-offset:2px}
-        .lp-mobile-bottom-nav svg{width:18px;height:18px}
-        .lp-main{padding-bottom:102px!important}
-      }
-      @media(prefers-reduced-motion:reduce){.lp-mobile-bottom-nav button{transition:none}}
-      .lp-gameplay-overlay{position:fixed;inset:0;z-index:1002;background:rgba(4,8,12,.72);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:20px}
-      .lp-gameplay-card{width:min(720px,100%);max-height:min(760px,calc(100vh - 40px));overflow:auto;background:#0c1219;border:1px solid #243241;border-radius:28px;box-shadow:0 30px 90px rgba(0,0,0,.5);color:#e8eef5;padding:24px}
-      .lp-gameplay-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:22px}
-      .lp-gameplay-title{display:flex;gap:12px;align-items:center}.lp-gameplay-title svg{color:#f5c76b}.lp-gameplay-title h2{margin:0;font-size:26px}.lp-gameplay-title p{margin:5px 0 0;color:#8290a0;font-size:13px}
-      .lp-gameplay-close{border:0;background:#17212c;color:#aeb9c5;border-radius:12px;width:42px;height:42px;display:grid;place-items:center}
-      .lp-gp-level{background:linear-gradient(135deg,#14252a,#101b23);border:1px solid #263b43;border-radius:22px;padding:20px;margin-bottom:16px}.lp-gp-level-row{display:flex;justify-content:space-between;align-items:end;gap:12px}.lp-gp-level strong{font-size:34px}.lp-gp-level span{color:#8393a2;font-size:12px}.lp-gp-bar{height:9px;background:#17232d;border-radius:99px;overflow:hidden;margin-top:14px}.lp-gp-bar i{display:block;height:100%;background:#5eead4;border-radius:99px}
-      .lp-gp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}.lp-gp-stat{background:#111a23;border:1px solid #202d39;border-radius:17px;padding:15px}.lp-gp-stat small{display:block;color:#788898;font-size:11px;margin-bottom:7px}.lp-gp-stat b{font-size:20px}.lp-gp-stat .gold{color:#f5c76b}.lp-gp-missions{background:#111a23;border:1px solid #202d39;border-radius:20px;padding:18px}.lp-gp-missions h3{margin:0 0 14px;font-size:15px}.lp-gp-mission{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid #1e2934}.lp-gp-mission:first-of-type{border-top:0}.lp-gp-check{width:24px;height:24px;border-radius:8px;border:1px solid #334454;display:grid;place-items:center;color:#5eead4;flex:none}.lp-gp-check.done{background:#5eead414;border-color:#5eead466}.lp-gp-mission p{margin:0;font-size:13px}.lp-gp-mission small{display:block;color:#7e8d9c;margin-top:3px}.lp-gp-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.lp-gp-action{border:1px solid #263543;background:#131d27;color:#dce6ef;border-radius:14px;padding:13px;text-align:left;display:flex;align-items:center;justify-content:space-between}.lp-gp-action strong{display:block;font-size:13px}.lp-gp-action span{display:block;color:#7f8d9b;font-size:11px;margin-top:3px}
-      @media(max-width:560px){.lp-gp-grid{grid-template-columns:repeat(2,1fr)}.lp-gp-actions{grid-template-columns:1fr}.lp-gameplay-card{padding:18px;border-radius:22px}.lp-gameplay-overlay{padding:10px}.lp-gameplay-title h2{font-size:22px}}
-    `;
-    document.head.appendChild(style);
-    const sync=()=>{
-      const app=document.querySelector('.lp-app');
-      const nav=document.querySelector('.lp-side .nav');
-      const shouldShow=!!app&&!!nav;
-      setVisible(prev=>prev===shouldShow?prev:shouldShow);
-      if(!shouldShow)return;
-      const current=nav.querySelector('button.active');
-      if(current){const text=current.textContent.trim();const found=items.find(x=>text.startsWith(x[1])||(x[0]==='plan'&&text.startsWith('Il mio piano')));if(found)setActive(found[0]);}
-      if(!nav.querySelector('[data-lp-gameplay]')){
-        const b=document.createElement('button');b.type='button';b.dataset.lpGameplay='1';b.className='lp-gameplay-nav';b.innerHTML='<span aria-hidden="true">🏆</span>Gameplay';b.onclick=()=>{window.dispatchEvent(new CustomEvent('lifepilot:gameplay'));};nav.appendChild(b);
-      }
-    };
+      .lp-side .nav .lp-gameplay-nav,.lp-drawer .nav .lp-gameplay-nav{width:100%;border:0;background:transparent;color:#7f8b99;border-radius:14px;display:flex;align-items:center;gap:12px;padding:11px 14px;font:inherit;font-weight:700;cursor:pointer;text-align:left}.lp-side .nav .lp-gameplay-nav:hover,.lp-drawer .nav .lp-gameplay-nav:hover{background:#f5c76b12;color:#f5c76b}.lp-side .nav .lp-gameplay-nav span,.lp-drawer .nav .lp-gameplay-nav span{width:20px;text-align:center}
+      @media(max-width:900px){.lp-mobile-bottom-nav{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));height:66px;display:grid;grid-template-columns:repeat(6,1fr);align-items:center;padding:5px;background:rgba(10,14,20,.96);border:1px solid #202a36;border-radius:20px;box-shadow:0 18px 50px rgba(0,0,0,.35);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);z-index:50}.lp-mobile-bottom-nav button{min-width:0;height:54px;border:0;background:transparent;color:#7f8b99;border-radius:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:9px;font-weight:700;transition:.16s ease;white-space:nowrap}.lp-mobile-bottom-nav button.active{background:#5eead414;color:#5eead4}.lp-mobile-bottom-nav button.gameplay{color:#f5c76b}.lp-mobile-bottom-nav button.gameplay.active{background:#f5c76b18;color:#ffd98a}.lp-mobile-bottom-nav button:active{transform:scale(.96)}.lp-mobile-bottom-nav svg{width:18px;height:18px}.lp-main{padding-bottom:102px!important}}
+      .lp-gameplay-overlay{position:fixed;inset:0;z-index:1002;background:rgba(4,8,12,.72);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:20px}.lp-gameplay-card{width:min(720px,100%);max-height:min(760px,calc(100vh - 40px));overflow:auto;background:#0c1219;border:1px solid #243241;border-radius:28px;box-shadow:0 30px 90px rgba(0,0,0,.5);color:#e8eef5;padding:24px}.lp-gameplay-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:22px}.lp-gameplay-title{display:flex;gap:12px;align-items:center}.lp-gameplay-title svg{color:#f5c76b}.lp-gameplay-title h2{margin:0;font-size:26px}.lp-gameplay-title p{margin:5px 0 0;color:#8290a0;font-size:13px}.lp-gameplay-close{border:0;background:#17212c;color:#aeb9c5;border-radius:12px;width:42px;height:42px;display:grid;place-items:center}.lp-gp-level{background:linear-gradient(135deg,#14252a,#101b23);border:1px solid #263b43;border-radius:22px;padding:20px;margin-bottom:16px}.lp-gp-level-row{display:flex;justify-content:space-between;align-items:end;gap:12px}.lp-gp-level strong{display:block;font-size:34px;line-height:1.1}.lp-gp-level span{color:#8393a2;font-size:12px}.lp-gp-bar{height:9px;background:#17232d;border-radius:99px;overflow:hidden;margin-top:14px}.lp-gp-bar i{display:block;height:100%;background:#5eead4;border-radius:99px}.lp-gp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}.lp-gp-stat{background:#111a23;border:1px solid #202d39;border-radius:17px;padding:15px}.lp-gp-stat small{display:flex;align-items:center;gap:5px;color:#788898;font-size:11px;margin-bottom:7px}.lp-gp-stat b{font-size:20px}.lp-gp-stat .gold{color:#f5c76b}.lp-gp-missions{background:#111a23;border:1px solid #202d39;border-radius:20px;padding:18px}.lp-gp-missions h3{margin:0 0 14px;font-size:15px}.lp-gp-mission{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid #1e2934}.lp-gp-mission:first-of-type{border-top:0}.lp-gp-check{width:24px;height:24px;border-radius:8px;border:1px solid #334454;display:grid;place-items:center;color:#5eead4;flex:none}.lp-gp-check.done{background:#5eead414;border-color:#5eead466}.lp-gp-mission p{margin:0;font-size:13px}.lp-gp-mission small{display:block;color:#7e8d9c;margin-top:3px}.lp-gp-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.lp-gp-action{border:1px solid #263543;background:#131d27;color:#dce6ef;border-radius:14px;padding:13px;text-align:left;display:flex;align-items:center;justify-content:space-between}.lp-gp-action strong{display:block;font-size:13px}.lp-gp-action span{display:block;color:#7f8d9b;font-size:11px;margin-top:3px}@media(max-width:560px){.lp-gp-grid{grid-template-columns:repeat(2,1fr)}.lp-gp-actions{grid-template-columns:1fr}.lp-gameplay-card{padding:18px;border-radius:22px}.lp-gameplay-overlay{padding:10px}.lp-gameplay-title h2{font-size:22px}}
+    `;document.head.appendChild(style);
+    const loadStats=async()=>{try{const {data:{session}}=await supabase.auth.getSession();if(!session)return;const uid=session.user.id;const [t,g]=await Promise.all([supabase.from('goal_tasks').select('completed,task_date').eq('user_id',uid),supabase.from('goals').select('streak').eq('user_id',uid)]);const tasks=t.data||[],goals=g.data||[],today=new Date().toISOString().slice(0,10);setStats({completed:tasks.filter(x=>x.completed).length,today:tasks.filter(x=>x.task_date===today&&x.completed).length,goals:goals.length,streak:goals.reduce((m,x)=>Math.max(m,x.streak||0),0)})}catch{}};
     const open=()=>{setGameplay(true);loadStats()};
-    const loadStats=async()=>{try{const {data:{session}}=await supabase.auth.getSession();if(!session)return;const uid=session.user.id;const [t,g]=await Promise.all([supabase.from('goal_tasks').select('completed,task_date').eq('user_id',uid),supabase.from('goals').select('streak').eq('user_id',uid)]);const tasks=t.data||[];const today=new Date().toISOString().slice(0,10);setStats({completed:tasks.filter(x=>x.completed).length,today:tasks.filter(x=>x.task_date===today&&x.completed).length,goals:(g.data||[]).length,streak:Math.max(...(g.data||[]).map(x=>x.streak||0),0)})}catch{}};
-    const onGameplay=()=>open();
-    window.addEventListener('lifepilot:gameplay',onGameplay);
-    const observer=new MutationObserver(sync);observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});sync();
-    return()=>{window.removeEventListener('lifepilot:gameplay',onGameplay);observer.disconnect();style.remove()};
+    const sync=()=>{const app=document.querySelector('.lp-app'),nav=document.querySelector('.lp-side .nav');const shouldShow=!!app&&!!nav;setVisible(prev=>prev===shouldShow?prev:shouldShow);if(!shouldShow)return;const current=nav.querySelector('button.active');if(current){const text=current.textContent.trim(),found=items.find(x=>text.startsWith(x[1])||(x[0]==='plan'&&text.startsWith('Il mio piano')));if(found)setActive(found[0])}if(!nav.querySelector('[data-lp-gameplay]')){const b=document.createElement('button');b.type='button';b.dataset.lpGameplay='1';b.className='lp-gameplay-nav';b.innerHTML='<span aria-hidden="true">🏆</span>Gameplay';b.onclick=open;nav.appendChild(b)}};
+    const observer=new MutationObserver(sync);observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});sync();window.addEventListener('lifepilot:gameplay',open);return()=>{window.removeEventListener('lifepilot:gameplay',open);observer.disconnect();style.remove()};
   },[]);
-
-  const go=(key)=>{
-    if(key==='gameplay'){window.dispatchEvent(new CustomEvent('lifepilot:gameplay'));return;}
-    const nav=document.querySelector('.lp-side .nav');if(!nav)return;
-    const buttons=[...nav.querySelectorAll('button')];const target=items.find(x=>x[0]===key);if(!target)return;
-    const button=buttons.find(b=>{const text=b.textContent.trim();return text===target[1]||(key==='plan'&&text==='Il mio piano');});
-    if(button){setActive(key);button.click();}
-  };
-
+  const go=key=>{if(key==='gameplay'){window.dispatchEvent(new CustomEvent('lifepilot:gameplay'));return}const nav=document.querySelector('.lp-side .nav');if(!nav)return;const target=items.find(x=>x[0]===key);const button=[...nav.querySelectorAll('button')].find(b=>{const text=b.textContent.trim();return text===target[1]||(key==='plan'&&text==='Il mio piano')});if(button){setActive(key);button.click()}};
   if(!visible)return null;
-  const level=Math.floor(stats.completed/10)+1;const xp=stats.completed*25;const next=level*250;const progress=Math.min(100,Math.round((xp%250)/250*100));
-  return <>
-    <nav className="lp-mobile-bottom-nav" aria-label="Navigazione rapida mobile">
-      {items.map(([key,label,Icon])=><button key={key} className={(active===key?'active ':'')+(key==='gameplay'?'gameplay':'')} onClick={()=>go(key)} aria-label={label} aria-current={active===key?'page':undefined}><Icon/>{label}</button>)}
-    </nav>
-    {gameplay&&<div className="lp-gameplay-overlay" onClick={()=>setGameplay(false)}><section className="lp-gameplay-card" onClick={e=>e.stopPropagation()} aria-label="Gameplay LifePilot">
-      <div className="lp-gameplay-head"><div className="lp-gameplay-title"><Trophy size={28}/><div><h2>Gameplay</h2><p>Trasforma la costanza in progressione.</p></div></div><button className="lp-gameplay-close" onClick={()=>setGameplay(false)} aria-label="Chiudi"><X/></button></div>
-      <div className="lp-gp-level"><div className="lp-gp-level-row"><div><span>LIVELLO</span><strong>{level}</strong></div><span>{xp%250} / 250 XP</span></div><div className="lp-gp-bar"><i style={{width:`${progress}%`}}/></div></div>
-      <div className="lp-gp-grid"><div className="lp-gp-stat"><small><Flame size={13}/> Streak</small><b>{stats.streak} g</b></div><div className="lp-gp-stat"><small><Sparkles size={13}/> XP</small><b>{xp}</b></div><div className="lp-gp-stat"><small><Coins size={13}/> LifeCoins</small><b className="gold">{stats.completed*10}</b></div><div className="lp-gp-stat"><small><Target size={13}/> Obiettivi</small><b>{stats.goals}</b></div></div>
-      <div className="lp-gp-missions"><h3>Missioni di oggi</h3><div className="lp-gp-mission"><span className={'lp-gp-check '+(stats.today>=1?'done':'')}>{stats.today>=1?'✓':''}</span><div><p>Completa una sessione</p><small>+25 XP · +10 LifeCoins</small></div></div><div className="lp-gp-mission"><span className={'lp-gp-check '+(stats.today>=2?'done':'')}>{stats.today>=2?'✓':''}</span><div><p>Completa 2 azioni</p><small>+50 XP · +20 LifeCoins</small></div></div><div className="lp-gp-mission"><span className="lp-gp-check"> </span><div><p>Mantieni la tua streak</p><small>Ricompensa giornaliera</small></div></div></div>
-      <div className="lp-gp-actions"><button className="lp-gp-action" onClick={()=>{setGameplay(false);go('calendar')}}><div><strong>📅 Sessioni</strong><span>Programma il prossimo passo</span></div><ArrowRight size={16}/></button><button className="lp-gp-action" onClick={()=>{setGameplay(false);go('focus')}}><div><strong>⚡ Focus</strong><span>Inizia una sessione ora</span></div><ArrowRight size={16}/></button></div>
-    </section></div>}
-  </>;
+  const level=Math.floor(stats.completed/10)+1,xp=stats.completed*25,progress=Math.round((xp%250)/250*100);
+  return <><nav className="lp-mobile-bottom-nav" aria-label="Navigazione rapida mobile">{items.map(([key,label,Icon])=><button key={key} className={(active===key?'active ':'')+(key==='gameplay'?'gameplay':'')} onClick={()=>go(key)} aria-label={label} aria-current={active===key?'page':undefined}><Icon/>{label}</button>)}</nav>{gameplay&&<div className="lp-gameplay-overlay" onClick={()=>setGameplay(false)}><section className="lp-gameplay-card" onClick={e=>e.stopPropagation()} aria-label="Gameplay LifePilot"><div className="lp-gameplay-head"><div className="lp-gameplay-title"><Trophy size={28}/><div><h2>Gameplay</h2><p>Trasforma la costanza in progressione.</p></div></div><button className="lp-gameplay-close" onClick={()=>setGameplay(false)} aria-label="Chiudi"><X/></button></div><div className="lp-gp-level"><div className="lp-gp-level-row"><div><span>LIVELLO</span><strong>{level}</strong></div><span>{xp%250} / 250 XP</span></div><div className="lp-gp-bar"><i style={{width:`${progress}%`}}/></div></div><div className="lp-gp-grid"><div className="lp-gp-stat"><small><Flame size={13}/> Streak</small><b>{stats.streak} g</b></div><div className="lp-gp-stat"><small><Sparkles size={13}/> XP</small><b>{xp}</b></div><div className="lp-gp-stat"><small><Coins size={13}/> LifeCoins</small><b className="gold">{stats.completed*10}</b></div><div className="lp-gp-stat"><small><Target size={13}/> Obiettivi</small><b>{stats.goals}</b></div></div><div className="lp-gp-missions"><h3>Missioni di oggi</h3><div className="lp-gp-mission"><span className={'lp-gp-check '+(stats.today>=1?'done':'')}>{stats.today>=1?'✓':''}</span><div><p>Completa una sessione</p><small>+25 XP · +10 LifeCoins</small></div></div><div className="lp-gp-mission"><span className={'lp-gp-check '+(stats.today>=2?'done':'')}>{stats.today>=2?'✓':''}</span><div><p>Completa 2 azioni</p><small>+50 XP · +20 LifeCoins</small></div></div><div className="lp-gp-mission"><span className="lp-gp-check"> </span><div><p>Mantieni la tua streak</p><small>Ricompensa giornaliera</small></div></div></div><div className="lp-gp-actions"><button className="lp-gp-action" onClick={()=>{setGameplay(false);go('calendar')}}><div><strong>📅 Sessioni</strong><span>Programma il prossimo passo</span></div><ArrowRight size={16}/></button><button className="lp-gp-action" onClick={()=>{setGameplay(false);go('focus')}}><div><strong>⚡ Focus</strong><span>Inizia una sessione ora</span></div><ArrowRight size={16}/></button></div></section></div>}</>;
 }
