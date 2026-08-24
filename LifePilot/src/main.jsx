@@ -2,7 +2,6 @@ import React,{lazy,Suspense} from 'react';
 import { createRoot } from 'react-dom/client';
 import './lifepilot-v2.css';
 import './lifepilot-polish.css';
-import './quiz-abilities.js';
 
 const LifePilotV2=lazy(()=>import('./lifepilot-v2.jsx'));
 
